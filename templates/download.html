@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Download — Building Claude's Brain | St. Pete AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--black:#080810;--deep:#0e0e1a;--surface:#14141f;--card:#1a1a28;--border:#2a2a3d;--gold:#C9A227;--gold-lt:#e8c14a;--gold-dim:#7a6118;--red:#C0392B;--blue:#2980B9;--green:#27AE60;--white:#FFFFFF;--text:#d4d4e8;--muted:#7a7a9a}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--black);color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.7;min-height:100vh;display:flex;flex-direction:column}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(201,162,39,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(201,162,39,.03) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:18px 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(8,8,16,.88);backdrop-filter:blur(16px);border-bottom:1px solid rgba(201,162,39,.12)}
+.nav-brand{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:.08em;color:var(--gold);text-decoration:none}
+.container{max-width:700px;margin:0 auto;padding:0 32px;position:relative;z-index:1}
+.dl-section{flex:1;display:flex;align-items:center;justify-content:center;padding:120px 0 80px;text-align:center}
+.dl-icon{font-size:4rem;margin-bottom:20px}
+.dl-title{font-family:'Bebas Neue',sans-serif;font-size:2.6rem;color:var(--white);letter-spacing:.04em;margin-bottom:12px}
+.dl-sub{font-family:'DM Serif Display',serif;font-style:italic;font-size:1.05rem;color:var(--muted);margin-bottom:40px}
+.download-grid{display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin-bottom:24px}
+.dl-btn{display:inline-flex;align-items:center;gap:10px;padding:16px 32px;border-radius:6px;font-weight:600;font-size:.95rem;text-decoration:none;transition:all .25s;border:2px solid}
+.dl-btn-pdf{background:rgba(192,57,43,.12);border-color:var(--red);color:#e55}
+.dl-btn-pdf:hover{background:rgba(192,57,43,.22);transform:translateY(-2px)}
+.dl-btn-docx{background:rgba(41,128,185,.12);border-color:var(--blue);color:#6af}
+.dl-btn-docx:hover{background:rgba(41,128,185,.22);transform:translateY(-2px)}
+.dl-count{font-size:.82rem;color:var(--muted);margin-bottom:32px}
+.dl-note{font-size:.85rem;color:var(--muted)}
+.dl-note a{color:var(--gold)}
+.error-box{background:rgba(192,57,43,.1);border:1px solid rgba(192,57,43,.3);border-radius:8px;padding:24px 32px;margin-bottom:32px;color:#e55;font-size:.95rem}
+footer{background:var(--black);border-top:1px solid var(--border);padding:40px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;position:relative;z-index:1}
+.footer-brand{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:.08em;color:var(--gold)}
+.footer-copy{font-size:.8rem;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="/">St. Pete AI</a>
+</nav>
+
+<section class="dl-section">
+  <div class="container">
+    {% if error %}
+    <div class="dl-icon">&#9888;&#65039;</div>
+    <h1 class="dl-title">Download Unavailable</h1>
+    <div class="error-box">{{ error }}</div>
+    <p class="dl-note">Need help? <a href="mailto:mark@scrumbuddhism.com">mark@scrumbuddhism.com</a></p>
+    {% else %}
+    <div class="dl-icon">&#128218;</div>
+    <h1 class="dl-title">Your Ebook is Ready</h1>
+    <p class="dl-sub">Building Claude's Brain — PDF + DOCX</p>
+    <div class="download-grid">
+      <a class="dl-btn dl-btn-pdf" href="{{ url_for('payments.download_file', token=purchase.download_token, fmt='pdf') }}">&#128196; Download PDF</a>
+      <a class="dl-btn dl-btn-docx" href="{{ url_for('payments.download_file', token=purchase.download_token, fmt='docx') }}">&#128221; Download DOCX</a>
+    </div>
+    <p class="dl-count">Downloads used: {{ purchase.download_count }} / {{ purchase.max_downloads }}</p>
+    <p class="dl-note">Questions? <a href="mailto:mark@scrumbuddhism.com">mark@scrumbuddhism.com</a></p>
+    {% endif %}
+  </div>
+</section>
+
+<footer>
+  <div class="footer-brand">St. Pete AI</div>
+  <div class="footer-copy">&copy; 2025 St. Pete AI &middot; mark@scrumbuddhism.com</div>
+</footer>
+
+</body>
+</html>

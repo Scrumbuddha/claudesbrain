@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Building Claude's Brain — The Complete Guide | St. Pete AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--black:#080810;--deep:#0e0e1a;--surface:#14141f;--card:#1a1a28;--border:#2a2a3d;--gold:#C9A227;--gold-lt:#e8c14a;--gold-dim:#7a6118;--orange:#E8922A;--blue:#2980B9;--green:#27AE60;--purple:#8E44AD;--teal:#16A085;--pink:#D4478A;--red:#C0392B;--white:#FFFFFF;--text:#dcdcf0;--muted:#9494b4}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--black);color:var(--text);font-family:'Inter',sans-serif;font-size:16px;line-height:1.7;font-weight:400;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(201,162,39,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(201,162,39,.03) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:18px 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(8,8,16,.88);backdrop-filter:blur(16px);border-bottom:1px solid rgba(201,162,39,.12)}
+.nav-brand{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:.08em;color:var(--gold);text-decoration:none}
+.nav-cta{background:var(--gold);color:var(--black);font-weight:700;font-size:.85rem;padding:10px 22px;border-radius:4px;text-decoration:none;transition:all .2s}
+.nav-cta:hover{background:var(--gold-lt);transform:translateY(-1px)}
+.container{max-width:1100px;margin:0 auto;padding:0 32px;position:relative;z-index:1}
+section{position:relative;overflow:hidden}
+#hero{min-height:100vh;display:flex;align-items:center;padding:120px 0 80px;position:relative;overflow:hidden}
+.hero-bg{position:absolute;right:-8%;top:50%;transform:translateY(-50%);width:920px;height:920px;pointer-events:none;z-index:0;opacity:.28;animation:hero-spin 90s linear infinite}
+.hero-bg img{width:100%;height:100%;border-radius:50%;filter:drop-shadow(0 0 120px rgba(201,162,39,0.3))}
+@keyframes hero-spin{from{transform:translateY(-50%) rotate(0deg)}to{transform:translateY(-50%) rotate(360deg)}}
+.hero-inner{display:grid;grid-template-columns:1fr;align-items:center;position:relative;z-index:2}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:10px;background:rgba(201,162,39,.1);border:1px solid rgba(201,162,39,.3);border-radius:100px;padding:6px 16px 6px 12px;font-size:.78rem;font-weight:600;letter-spacing:.08em;color:var(--gold);text-transform:uppercase;margin-bottom:28px}
+.hero-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(3.5rem,7vw,6rem);line-height:.95;letter-spacing:.03em;color:var(--white);margin-bottom:8px}
+.hero-title em{font-style:normal;color:var(--gold);display:block}
+.hero-subtitle{font-family:'Inter',sans-serif;font-weight:500;font-size:1.25rem;color:var(--muted);font-style:italic;margin-bottom:28px}
+.hero-desc{font-size:1.05rem;color:var(--text);max-width:520px;margin-bottom:44px;line-height:1.75}
+.hero-ctas{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.btn-primary{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--gold),#e8a820);color:var(--black);font-weight:700;font-size:1rem;padding:16px 32px;border-radius:6px;text-decoration:none;transition:all .25s;box-shadow:0 8px 32px rgba(201,162,39,.35)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(201,162,39,.5)}
+.btn-price{font-size:.85rem;opacity:.75;font-weight:500}
+.btn-secondary{color:var(--muted);font-size:.9rem;text-decoration:none;transition:color .2s}
+.btn-secondary:hover{color:var(--text)}
+.hero-stats{display:flex;gap:36px;margin-top:48px;padding-top:36px;border-top:1px solid var(--border)}
+.stat-num{font-family:'Bebas Neue',sans-serif;font-size:2.2rem;color:var(--gold);line-height:1}
+.stat-label{font-size:.8rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.section-tag{display:inline-block;background:rgba(201,162,39,.1);border:1px solid rgba(201,162,39,.25);border-radius:3px;padding:4px 14px;font-size:.72rem;font-weight:600;letter-spacing:.1em;color:var(--gold);text-transform:uppercase;margin-bottom:20px}
+.section-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(2.4rem,5vw,3.6rem);color:var(--white);letter-spacing:.04em;margin-bottom:16px}
+.section-sub{font-family:'Inter',sans-serif;font-weight:300;font-size:1.1rem;color:var(--muted);max-width:560px;margin:0 auto 60px}
+#learn{padding:80px 0;background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.learn-label{text-align:center;font-size:.78rem;font-weight:600;letter-spacing:.12em;color:var(--gold);text-transform:uppercase;margin-bottom:48px}
+.chapter-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:2px}
+.chapter-card{background:var(--card);padding:28px 24px;border-left:3px solid var(--c-color,var(--gold));transition:all .25s;opacity:0;transform:translateY(18px)}
+.chapter-card.vis{opacity:1;transform:translateY(0)}
+.chapter-card:hover{background:rgba(255,255,255,.04);transform:translateY(-3px)}
+.chapter-icon{font-size:1.6rem;margin-bottom:10px}
+.chapter-num{font-size:.7rem;font-weight:600;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+.chapter-name{font-family:'Inter',sans-serif;font-weight:500;font-size:1.1rem;color:var(--white);margin-bottom:8px}
+.chapter-desc{font-size:.95rem;color:var(--muted);line-height:1.65}
+#diagram{padding:100px 0;background:var(--deep);text-align:center}
+.diagram-wrap{display:inline-block;position:relative;cursor:zoom-in}
+.diagram-wrap:hover .diagram-img{filter:drop-shadow(0 0 80px rgba(201,162,39,0.4));transform:scale(1.02)}
+.diagram-wrap:hover .zoom-hint{opacity:1}
+.diagram-img{max-width:540px;width:100%;border-radius:50%;filter:drop-shadow(0 0 60px rgba(201,162,39,0.25));transition:all .3s ease}
+.zoom-hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(8,8,16,.8);border:1px solid var(--border);border-radius:100px;padding:6px 16px;font-size:.75rem;color:var(--muted);opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.diagram-caption{font-size:.83rem;color:var(--muted);font-style:italic;margin-top:24px}
+.lightbox{display:none;position:fixed;inset:0;z-index:9999;background:rgba(4,4,8,.92);backdrop-filter:blur(12px);align-items:center;justify-content:center;cursor:zoom-out;padding:32px}
+.lightbox.open{display:flex}
+.lightbox img{max-width:90vw;max-height:90vh;border-radius:12px;filter:drop-shadow(0 0 100px rgba(201,162,39,0.3));animation:lb-in .3s ease}
+@keyframes lb-in{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+.lightbox-close{position:absolute;top:24px;right:32px;font-size:1.8rem;color:var(--muted);cursor:pointer;transition:color .2s;background:none;border:none;font-family:inherit}
+.lightbox-close:hover{color:var(--white)}
+.layer-pills{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:48px}
+.layer-pill{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:100px;padding:7px 16px;font-size:.9rem;font-weight:500;color:var(--text);transition:all .2s}
+.layer-pill:hover{background:rgba(255,255,255,.08)}
+.pill-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+#inside{padding:100px 0;background:var(--black)}
+.inside-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:start}
+.inside-left h2{font-family:'Bebas Neue',sans-serif;font-size:clamp(2rem,4vw,3rem);color:var(--white);letter-spacing:.04em;line-height:1;margin-bottom:20px}
+.inside-left p{color:var(--muted);font-size:.98rem;line-height:1.8;margin-bottom:32px}
+.feature-list{list-style:none}
+.feature-list li{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:1rem;color:var(--text)}
+.feature-list li::before{content:'\25B8';color:var(--gold);font-size:.8rem;margin-top:3px;flex-shrink:0}
+.toc-block{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.toc-header{background:linear-gradient(135deg,var(--gold-dim),rgba(201,162,39,.2));padding:16px 24px;font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:.1em;color:var(--gold-lt)}
+.toc-item{display:flex;align-items:center;gap:14px;padding:13px 24px;border-bottom:1px solid rgba(255,255,255,.04);font-size:.95rem;transition:background .15s}
+.toc-item:hover{background:rgba(255,255,255,.03)}
+.toc-item:last-child{border-bottom:none}
+.toc-n{font-family:'Bebas Neue',sans-serif;font-size:1rem;color:var(--muted);width:24px;flex-shrink:0}
+.toc-name{color:var(--text);font-weight:500;flex:1}
+.toc-badge{font-size:.7rem;font-weight:600;letter-spacing:.06em;padding:2px 8px;border-radius:3px;background:rgba(255,255,255,.06);color:var(--muted)}
+#audience{padding:80px 0;background:var(--surface);border-top:1px solid var(--border)}
+.audience-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:48px}
+.audience-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:24px 20px;text-align:center;transition:all .25s}
+.audience-card:hover{border-color:rgba(201,162,39,.3);transform:translateY(-3px)}
+.audience-icon{font-size:2.2rem;margin-bottom:12px}
+.audience-role{font-weight:600;font-size:.95rem;color:var(--white);margin-bottom:8px}
+.audience-desc{font-size:.9rem;color:var(--muted);line-height:1.6}
+#purchase{padding:120px 0;background:var(--deep);text-align:center}
+.pricing-card{max-width:460px;margin:48px auto 0;background:var(--card);border:1px solid rgba(201,162,39,.25);border-radius:12px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.pricing-header{background:linear-gradient(135deg,#1a1510,#1e1a0e);padding:36px 40px 28px;border-bottom:1px solid rgba(201,162,39,.2)}
+.pricing-label{font-size:.72rem;font-weight:600;letter-spacing:.12em;color:var(--gold-dim);text-transform:uppercase;margin-bottom:12px}
+.pricing-title{font-family:'Inter',sans-serif;font-weight:500;font-size:1.3rem;color:var(--white);margin-bottom:20px;line-height:1.3}
+.pricing-price{display:flex;align-items:baseline;gap:4px;justify-content:center}
+.price-currency{font-size:1.4rem;font-weight:600;color:var(--gold)}
+.price-amount{font-family:'Bebas Neue',sans-serif;font-size:4.5rem;color:var(--gold);letter-spacing:-.02em;line-height:1}
+.price-cents{font-size:1.4rem;font-weight:600;color:var(--gold)}
+.price-note{font-size:.82rem;color:var(--muted);margin-top:6px}
+.pricing-body{padding:28px 40px}
+.includes-list{list-style:none;margin-bottom:28px;text-align:left}
+.includes-list li{display:flex;align-items:center;gap:12px;padding:8px 0;font-size:1rem;color:var(--text);border-bottom:1px solid rgba(255,255,255,.04)}
+.includes-list li:last-child{border-bottom:none}
+.check{width:20px;height:20px;border-radius:50%;background:rgba(39,174,96,.15);border:1px solid rgba(39,174,96,.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.65rem;color:var(--green)}
+.paypal-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;background:#FFD140;color:#003087;font-weight:700;font-size:1.05rem;padding:18px 24px;border-radius:6px;text-decoration:none;transition:all .25s;margin-bottom:12px;box-shadow:0 4px 20px rgba(255,209,64,.3)}
+.paypal-btn:hover{background:#ffe066;transform:translateY(-2px);box-shadow:0 8px 28px rgba(255,209,64,.45)}
+.secure-note{display:flex;align-items:center;justify-content:center;gap:6px;font-size:.78rem;color:var(--muted)}
+.guarantee{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;padding:10px 16px;background:rgba(39,174,96,.08);border:1px solid rgba(39,174,96,.25);border-radius:6px;font-size:.85rem;font-weight:600;color:var(--green)}
+.pricing-footer{padding:16px 40px 24px;background:rgba(0,0,0,.2);border-top:1px solid rgba(255,255,255,.04)}
+.format-badges{display:flex;justify-content:center;gap:10px}
+.format-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:4px;padding:5px 12px;font-size:.78rem;font-weight:600;color:var(--text)}
+footer{background:var(--black);border-top:1px solid var(--border);padding:40px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;position:relative;z-index:1}
+.footer-brand{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:.08em;color:var(--gold)}
+.footer-links{display:flex;gap:28px}
+.footer-links a{color:var(--muted);font-size:.85rem;text-decoration:none;transition:color .2s}
+.footer-links a:hover{color:var(--text)}
+.footer-copy{font-size:.8rem;color:var(--muted)}
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .6s ease,transform .6s ease}
+.reveal.vis{opacity:1;transform:translateY(0)}
+@media(max-width:860px){.hero-inner{grid-template-columns:1fr;gap:40px}.hero-bg{width:600px;height:600px;right:-30%;opacity:.15}.inside-grid{grid-template-columns:1fr}.hero-stats{gap:24px}nav{padding:16px 20px}.container{padding:0 20px}.pricing-header,.pricing-body,.pricing-footer{padding-left:24px;padding-right:24px}}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="https://stpeteai.org">St. Pete AI</a>
+  <a class="nav-cta" href="#purchase">Get the Ebook — $9.99</a>
+</nav>
+
+<section id="hero">
+  <div class="hero-bg"><img src="{{ url_for('static', filename='images/radial-chart-v2.jpg') }}" alt=""></div>
+  <div class="container">
+    <div class="hero-inner">
+      <div>
+        <div class="hero-eyebrow"><span>&#129504;</span> New Release &middot; Claude Code Guide</div>
+        <h1 class="hero-title">Building<br><em>Claude's Brain</em></h1>
+        <p class="hero-subtitle">A complete field guide to every layer that makes Claude Code smarter</p>
+        <p class="hero-desc">Claude Code isn't a fixed tool — it's a framework you build. This ebook maps every layer in depth: from foundational identity files to autonomous agent teams, slash commands to scriptable skills. Seven chapters. Every connection explained.</p>
+        <div class="hero-ctas">
+          <a class="btn-primary" href="#purchase">Get the Ebook <span class="btn-price">$9.99 &middot; PDF + DOCX</span></a>
+          <a class="btn-secondary" href="#diagram">See the diagram &#8595;</a>
+        </div>
+        <div class="hero-stats">
+          <div><div class="stat-num">7</div><div class="stat-label">Chapters</div></div>
+          <div><div class="stat-num">30+</div><div class="stat-label">Sub-Capabilities</div></div>
+          <div><div class="stat-num">2</div><div class="stat-label">File Formats</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="learn">
+  <div class="container">
+    <div class="learn-label">7 Chapters &middot; Deep-dive into every layer of the diagram</div>
+    <div class="chapter-grid">
+      <div class="chapter-card" style="--c-color:#E8922A"><div class="chapter-icon">&#129516;</div><div class="chapter-num">Chapter 1</div><div class="chapter-name">CLAUDE.md</div><div class="chapter-desc">Identity, rules, persistent memory, architecture decisions and team conventions — the constitution every other layer obeys.</div></div>
+      <div class="chapter-card" style="--c-color:#C0392B"><div class="chapter-icon">&#9881;&#65039;</div><div class="chapter-num">Chapter 2</div><div class="chapter-name">Settings &amp; Config</div><div class="chapter-desc">The three-tier hierarchy, model selection, tool allowlists, and the art of auto-approve rules.</div></div>
+      <div class="chapter-card" style="--c-color:#2980B9"><div class="chapter-icon">&#128268;</div><div class="chapter-num">Chapter 3</div><div class="chapter-name">MCP Servers</div><div class="chapter-desc">Connecting Claude to Gmail, Jira, GitHub, Drive, databases and any custom API — the open standard explained.</div></div>
+      <div class="chapter-card" style="--c-color:#27AE60"><div class="chapter-icon">&#129302;</div><div class="chapter-num">Chapter 4</div><div class="chapter-name">Sub-Agents</div><div class="chapter-desc">PO, BA, Dev, QA, SM and Architect agents — why isolated context windows change everything.</div></div>
+      <div class="chapter-card" style="--c-color:#8E44AD"><div class="chapter-icon">&#128218;</div><div class="chapter-num">Chapter 5</div><div class="chapter-name">Knowledge Base</div><div class="chapter-desc">ADRs, API docs, team standards and Agile frameworks — the domain memory Claude draws on every session.</div></div>
+      <div class="chapter-card" style="--c-color:#16A085"><div class="chapter-icon">&#128172;</div><div class="chapter-num">Chapter 6</div><div class="chapter-name">Slash Commands</div><div class="chapter-desc">/plan &middot; /review &middot; /standup — packaging multi-step workflows into shareable team shortcuts.</div></div>
+      <div class="chapter-card" style="--c-color:#D4478A"><div class="chapter-icon">&#9889;</div><div class="chapter-num">Chapter 7</div><div class="chapter-name">Skills (SKILL.md)</div><div class="chapter-desc">Auto-invoked behaviors, bundled scripts and team plugins — the layer Claude activates without being asked.</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="diagram">
+  <div class="container">
+    <div class="reveal" style="text-align:center">
+      <div class="section-tag">The Architecture Map</div>
+      <h2 class="section-title">Every Layer. Every Connection.</h2>
+      <p class="section-sub">The radial diagram maps all seven enhancement layers and 30+ sub-capabilities — showing precisely how they compound into something greater than any single layer.</p>
+    </div>
+    <div style="text-align:center" class="reveal">
+      <div class="diagram-wrap" onclick="document.getElementById('lightbox').classList.add('open')">
+          <img src="{{ url_for('static', filename='images/radial-chart-v2.jpg') }}" class="diagram-img" alt="Claude Brain Architecture Diagram">
+        <div class="zoom-hint">&#128269; Click to magnify</div>
+      </div>
+      <p class="diagram-caption">The seven layers radiate from Claude Code at the center — each feeds intelligence back to the hub.</p>
+    </div>
+    <div class="layer-pills reveal">
+      <div class="layer-pill"><div class="pill-dot" style="background:#E8922A"></div>&#129516; CLAUDE.md</div>
+      <div class="layer-pill"><div class="pill-dot" style="background:#C0392B"></div>&#9881;&#65039; Settings &amp; Config</div>
+      <div class="layer-pill"><div class="pill-dot" style="background:#2980B9"></div>&#128268; MCP Servers</div>
+      <div class="layer-pill"><div class="pill-dot" style="background:#27AE60"></div>&#129302; Sub-Agents</div>
+      <div class="layer-pill"><div class="pill-dot" style="background:#8E44AD"></div>&#128218; Knowledge Base</div>
+      <div class="layer-pill"><div class="pill-dot" style="background:#16A085"></div>&#128172; Slash Commands</div>
+      <div class="layer-pill"><div class="pill-dot" style="background:#D4478A"></div>&#9889; Skills</div>
+    </div>
+  </div>
+</section>
+
+<section id="inside">
+  <div class="container">
+    <div class="inside-grid">
+      <div class="reveal">
+        <div class="section-tag">What's Inside</div>
+        <h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(2rem,4vw,3rem);color:var(--white);letter-spacing:.04em;line-height:1;margin-bottom:20px">Everything you need to build the full system</h2>
+        <p style="color:var(--muted);font-size:1.05rem;line-height:1.8;margin-bottom:32px">This isn't a surface-level overview. Each chapter goes deep into how the layer works, what its sub-capabilities are, and — most importantly — how it connects to every other layer you've already built.</p>
+        <ul class="feature-list">
+          <li>Deep-dive explanations of all 7 layers and 30+ sub-nodes on the diagram</li>
+          <li>3 real-world Agile workflows showing all layers firing simultaneously</li>
+          <li>A 7-step practical roadmap with timing guidance</li>
+          <li>Pro Tips for every chapter — the highest-leverage moves first</li>
+          <li>"How This Layer Connects" callout in every single chapter</li>
+          <li>Complete quick-reference table with all official Claude Code docs</li>
+          <li>Introduction placeholder — personalize it before sharing</li>
+        </ul>
+      </div>
+      <div class="reveal">
+        <div class="toc-block">
+          <div class="toc-header">&#128203; &nbsp;Table of Contents</div>
+          <div class="toc-item"><span class="toc-n">—</span><span>&#128214;</span><span class="toc-name">Introduction</span><span class="toc-badge">YOUR WORDS</span></div>
+          <div class="toc-item"><span class="toc-n">—</span><span>&#128506;&#65039;</span><span class="toc-name">How to Read the Diagram</span></div>
+          <div class="toc-item"><span class="toc-n">1</span><span>&#129516;</span><span class="toc-name">CLAUDE.md</span></div>
+          <div class="toc-item"><span class="toc-n">2</span><span>&#9881;&#65039;</span><span class="toc-name">Settings &amp; Config</span></div>
+          <div class="toc-item"><span class="toc-n">3</span><span>&#128268;</span><span class="toc-name">MCP Servers</span></div>
+          <div class="toc-item"><span class="toc-n">4</span><span>&#129302;</span><span class="toc-name">Sub-Agents — Your AI Agile Team</span></div>
+          <div class="toc-item"><span class="toc-n">5</span><span>&#128218;</span><span class="toc-name">Knowledge Base</span></div>
+          <div class="toc-item"><span class="toc-n">6</span><span>&#128172;</span><span class="toc-name">Slash Commands</span></div>
+          <div class="toc-item"><span class="toc-n">7</span><span>&#9889;</span><span class="toc-name">Skills (SKILL.md)</span></div>
+          <div class="toc-item"><span class="toc-n">—</span><span>&#128279;</span><span class="toc-name">How the Layers Work Together</span></div>
+          <div class="toc-item"><span class="toc-n">—</span><span>&#128506;&#65039;</span><span class="toc-name">7-Step Practical Roadmap</span></div>
+          <div class="toc-item"><span class="toc-n">—</span><span>&#128203;</span><span class="toc-name">Quick Reference — All Official Docs</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="audience">
+  <div class="container">
+    <div class="reveal" style="text-align:center">
+      <div class="section-tag">Who It's For</div>
+      <h2 class="section-title">Built for the Whole Team</h2>
+      <p class="section-sub">Technical and non-technical alike — if your team ships software with AI, this is your map.</p>
+    </div>
+    <div class="audience-grid reveal">
+      <div class="audience-card"><div class="audience-icon">&#129489;&#8205;&#128188;</div><div class="audience-role">Scrum Masters</div><div class="audience-desc">Automate ceremonies, generate sprint summaries, and orchestrate your AI Agile team.</div></div>
+      <div class="audience-card"><div class="audience-icon">&#128203;</div><div class="audience-role">Product Owners</div><div class="audience-desc">Connect Claude to Jira, generate user stories, and keep requirements in sync with code.</div></div>
+      <div class="audience-card"><div class="audience-icon">&#128300;</div><div class="audience-role">Business Analysts</div><div class="audience-desc">Build knowledge bases that ground Claude in your domain without writing a line of code.</div></div>
+      <div class="audience-card"><div class="audience-icon">&#128105;&#8205;&#128187;</div><div class="audience-role">Developers</div><div class="audience-desc">Configure sub-agents, tool permissions and skills that match your actual workflow.</div></div>
+      <div class="audience-card"><div class="audience-icon">&#127959;&#65039;</div><div class="audience-role">Architects</div><div class="audience-desc">Preserve architectural decisions so Claude always reasons from your actual ADRs.</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="purchase">
+  <div class="container">
+    <div class="reveal" style="text-align:center">
+      <div class="section-tag">Get the Ebook</div>
+      <h2 class="section-title">One Price. Both Formats.</h2>
+      <p class="section-sub">Instant download after payment. PDF for reading. DOCX to customize and share.</p>
+    </div>
+    <div class="pricing-card reveal">
+      <div class="pricing-header">
+        <div class="pricing-label">Complete Ebook Bundle</div>
+        <div class="pricing-title">Building Claude's Brain<br>A Complete Field Guide</div>
+        <div class="pricing-price">
+          <span class="price-currency">$</span><span class="price-amount">9</span><span class="price-cents">.99</span>
+        </div>
+        <div class="price-note">One-time purchase &middot; Instant download</div>
+      </div>
+      <div class="pricing-body">
+        <ul class="includes-list">
+          <li><span class="check">&#10003;</span> PDF version — clean, print-ready</li>
+          <li><span class="check">&#10003;</span> DOCX version — editable, shareable with your team</li>
+          <li><span class="check">&#10003;</span> All 7 chapter deep-dives</li>
+          <li><span class="check">&#10003;</span> Full radial architecture diagram</li>
+          <li><span class="check">&#10003;</span> 7-step practical roadmap</li>
+          <li><span class="check">&#10003;</span> Complete official docs quick reference</li>
+        </ul>
+        <a class="paypal-btn"
+           href="https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=mark%40scrumbuddhism.com&item_name=Building+Claude%27s+Brain+(PDF+%2B+DOCX)&amount=9.99&currency_code=USD&no_shipping=1&notify_url={{ url_for('payments.ipn', _external=True) | urlencode }}&return={{ url_for('payments.thank_you', _external=True) | urlencode }}&cancel_return={{ url_for('index', _external=True) | urlencode }}%23purchase"
+           target="_blank">
+          <span style="font-style:italic;font-weight:900">Pay</span><strong>Pal</strong>&nbsp;&nbsp;Pay $9.99 Securely
+        </a>
+        <div class="secure-note">&#128274; Secure checkout &middot; No PayPal account required</div>
+        <div class="guarantee">&#128170; 30-Day Money-Back Guarantee — no questions asked</div>
+      </div>
+      <div class="pricing-footer">
+        <div class="format-badges">
+          <div class="format-badge">&#128196; PDF</div>
+          <div class="format-badge">&#128221; DOCX</div>
+          <div class="format-badge">&#9889; Instant Download</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-brand">St. Pete AI</div>
+  <div class="footer-links">
+    <a href="https://stpeteai.org">stpeteai.org</a>
+    <a href="mailto:mark@scrumbuddhism.com">Contact</a>
+    <a href="/terms">Terms &amp; Conditions</a>
+  </div>
+  <div class="footer-copy">&copy; 2025 St. Pete AI &middot; mark@scrumbuddhism.com</div>
+</footer>
+
+<script>
+const obs = new IntersectionObserver((entries)=>{
+  entries.forEach((e,i)=>{
+    if(e.isIntersecting){
+      setTimeout(()=>e.target.classList.add('vis'),i*60);
+      obs.unobserve(e.target);
+    }
+  });
+},{threshold:0.08,rootMargin:'0px 0px -40px 0px'});
+
+document.querySelectorAll('.reveal,.chapter-card').forEach((el,i)=>{
+  if(el.classList.contains('chapter-card')) el.style.transition='opacity .5s ease '+i*65+'ms,transform .5s ease '+i*65+'ms';
+  obs.observe(el);
+});
+</script>
+
+<div id="lightbox" class="lightbox" onclick="this.classList.remove('open')">
+  <button class="lightbox-close" aria-label="Close">&times;</button>
+  <img src="{{ url_for('static', filename='images/radial-chart-v2.jpg') }}" alt="Claude Brain Architecture Diagram — Full Size">
+</div>
+<script>
+document.addEventListener('keydown',function(e){if(e.key==='Escape')document.getElementById('lightbox').classList.remove('open')});
+</script>
+</body>
+</html>
