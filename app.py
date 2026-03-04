@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, render_template
+from flask import Flask, render_template, Response
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_wtf.csrf import CSRFProtect
@@ -57,6 +57,24 @@ def create_app():
     @app.route('/terms')
     def terms():
         return render_template('terms.html')
+
+    @app.route('/robots.txt')
+    def robots():
+        return Response(
+            "User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /download/\nDisallow: /thank-you\nSitemap: https://www.claudesbrain.com/sitemap.xml\n",
+            mimetype='text/plain'
+        )
+
+    @app.route('/sitemap.xml')
+    def sitemap():
+        return Response(
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+            '<url><loc>https://www.claudesbrain.com/</loc><changefreq>monthly</changefreq><priority>1.0</priority></url>'
+            '<url><loc>https://www.claudesbrain.com/terms</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>'
+            '</urlset>',
+            mimetype='application/xml'
+        )
 
     # --- DB setup & seed ---
     with app.app_context():
