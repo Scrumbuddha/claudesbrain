@@ -90,11 +90,16 @@ def load_user(user_id):
 
 
 def _seed_admin():
-    """Create default admin user if none exists."""
-    if not AdminUser.query.filter_by(email='admin@stpeteai.org').first():
+    """Create default admin user if none exists. If ADMIN_PASSWORD env var is set, force-reset the password."""
+    admin = AdminUser.query.filter_by(email='admin@stpeteai.org').first()
+    force_password = os.environ.get('ADMIN_PASSWORD')
+    if not admin:
         admin = AdminUser(email='admin@stpeteai.org')
-        admin.set_password('admin123')
+        admin.set_password(force_password or 'admin123')
         db.session.add(admin)
+        db.session.commit()
+    elif force_password:
+        admin.set_password(force_password)
         db.session.commit()
 
 
