@@ -53,7 +53,7 @@ def ipn():
     except (ValueError, TypeError):
         return 'Invalid amount', 200
 
-    if amount < 9.99:
+    if amount < 6.99:
         return 'Amount too low', 200
 
     # Check for duplicate transaction
