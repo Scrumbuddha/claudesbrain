@@ -1,6 +1,7 @@
 import csv
 import io
 import os
+import uuid
 
 import boto3
 from botocore.exceptions import ClientError
@@ -113,6 +114,35 @@ def revoke_access(purchase_id):
     p.status = 'revoked'
     db.session.commit()
     flash(f'Access revoked for {p.email}.', 'success')
+    return redirect(url_for('admin.dashboard'))
+
+
+@admin_bp.route('/purchase/create', methods=['POST'])
+@login_required
+def create_purchase():
+    email = request.form.get('email', '').strip()
+    name = request.form.get('name', '').strip()
+    amount = request.form.get('amount', '6.99').strip()
+    if not email:
+        flash('Email is required.', 'error')
+        return redirect(url_for('admin.dashboard'))
+    try:
+        amount = float(amount)
+    except ValueError:
+        amount = 6.99
+    p = Purchase(
+        email=email,
+        name=name,
+        paypal_txn_id=f'MANUAL-{uuid.uuid4().hex[:12].upper()}',
+        amount=amount,
+        currency='USD',
+        status='confirmed',
+        download_token=uuid.uuid4().hex,
+    )
+    db.session.add(p)
+    db.session.commit()
+    download_url = url_for('payments.download_page', token=p.download_token, _external=True)
+    flash(f'Purchase created for {email}. Download link: {download_url}', 'success')
     return redirect(url_for('admin.dashboard'))
 
 
