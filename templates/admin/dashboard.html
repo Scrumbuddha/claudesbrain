@@ -101,6 +101,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
           {% endif %}
         </div>
         <form method="post" action="{{ url_for('admin.upload_file', fmt=fmt) }}" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="file" name="file" id="file-{{ fmt }}" accept=".{{ fmt }}" style="display:none" onchange="this.form.submit()">
           <label for="file-{{ fmt }}" class="btn-upload">&#8593; {{ 'Replace' if files[fmt] else 'Upload' }} {{ label }}</label>
         </form>
@@ -158,10 +159,12 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <td class="token-cell" title="{{ p.download_token }}">{{ p.download_token[:12] }}...</td>
           <td style="white-space:nowrap;display:flex;gap:6px">
             <form method="post" action="{{ url_for('admin.grant_downloads', purchase_id=p.id) }}" style="display:inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="btn-action btn-grant" title="Add 5 downloads">+5 DL</button>
             </form>
             {% if p.status != 'revoked' %}
             <form method="post" action="{{ url_for('admin.revoke_access', purchase_id=p.id) }}" style="display:inline" onsubmit="return confirm('Revoke access for {{ p.email }}?')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="btn-action btn-revoke" title="Revoke access">Revoke</button>
             </form>
             {% endif %}
