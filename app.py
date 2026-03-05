@@ -46,8 +46,10 @@ def create_app():
 
     # --- Blueprints ---
     from admin import admin_bp
+    from brain_app import brain_app_bp
     app.register_blueprint(payments_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(brain_app_bp)
 
     # --- Routes ---
     @app.route('/')

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ section.title }} — Claude's Brain</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --black:#080810;--deep:#0e0e1a;--surface:#14141f;--card:#1a1a28;--border:#2a2a3d;
+  --gold:#C9A227;--gold-lt:#e8c14a;--white:#fff;--text:#dcdcf0;--muted:#8888aa;
+  --accent:{{ section.color }};
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--black);color:var(--text);font-family:'Inter',sans-serif;font-size:16px;line-height:1.6;min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(201,162,39,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(201,162,39,.03) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:100;padding:14px 32px;display:flex;align-items:center;justify-content:space-between;background:rgba(8,8,16,.92);backdrop-filter:blur(16px);border-bottom:1px solid rgba(201,162,39,.12)}
+.nav-brand{font-family:'Bebas Neue',sans-serif;font-size:1.25rem;letter-spacing:.08em;color:var(--gold);text-decoration:none}
+.nav-right{display:flex;align-items:center;gap:16px}
+.nav-right a{color:var(--muted);font-size:.82rem;text-decoration:none;transition:color .2s}
+.nav-right a:hover{color:var(--gold)}
+
+/* CHAPTER NAV PILLS */
+.chapter-nav{display:flex;gap:8px;flex-wrap:wrap;padding:18px 32px 0;position:relative;z-index:1;max-width:1000px;margin:0 auto;width:100%}
+.ch-pill{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:100px;border:1px solid var(--border);font-size:.75rem;text-decoration:none;color:var(--muted);transition:all .2s;white-space:nowrap}
+.ch-pill:hover{border-color:var(--accent);color:var(--white)}
+.ch-pill.active{background:color-mix(in srgb, var(--accent) 15%, transparent);border-color:var(--accent);color:var(--white);font-weight:600}
+
+/* HERO SECTION */
+.section-hero{padding:44px 32px 32px;position:relative;z-index:1;max-width:1000px;margin:0 auto;width:100%}
+.section-badge{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;opacity:.85}
+.section-icon{font-size:3.2rem;display:block;margin-bottom:12px;animation:pop .5s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes pop{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+.section-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(2.6rem,6vw,4.2rem);letter-spacing:.04em;color:var(--white);line-height:1;margin-bottom:12px}
+.section-tagline{font-size:1.05rem;color:var(--accent);font-style:italic;margin-bottom:10px;opacity:.9}
+.section-desc{font-size:.95rem;color:var(--muted);max-width:640px;line-height:1.7}
+
+/* DIVIDER */
+.divider{height:1px;background:linear-gradient(90deg,var(--accent) 0%,transparent 60%);opacity:.25;margin:28px 0;max-width:1000px;margin-left:auto;margin-right:auto;width:calc(100% - 64px)}
+
+/* LAYERS */
+.layers-wrap{max-width:1000px;margin:0 auto;padding:0 32px 20px;position:relative;z-index:1;width:100%}
+.layers-title{font-size:.72rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:20px}
+
+.layer-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0;margin-bottom:14px;overflow:hidden;transition:border-color .2s}
+.layer-card:hover{border-color:color-mix(in srgb, var(--accent) 40%, transparent)}
+
+/* Expand/collapse with checkbox trick */
+.layer-toggle{display:none}
+.layer-head{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;cursor:pointer;user-select:none;gap:16px}
+.layer-head-left{display:flex;align-items:center;gap:14px}
+.layer-num{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:var(--accent);opacity:.6;min-width:28px;line-height:1}
+.layer-head-title{font-family:'Bebas Neue',sans-serif;font-size:1.15rem;letter-spacing:.03em;color:var(--white)}
+.layer-chevron{color:var(--muted);font-size:.85rem;transition:transform .25s;flex-shrink:0}
+.layer-toggle:checked ~ .layer-head .layer-chevron{transform:rotate(180deg)}
+.layer-body{max-height:0;overflow:hidden;transition:max-height .35s ease}
+.layer-toggle:checked ~ .layer-body{max-height:500px}
+.layer-body-inner{padding:0 24px 22px 66px}
+.layer-desc{font-size:.92rem;color:var(--text);line-height:1.75;margin-bottom:16px}
+.pro-tip{background:color-mix(in srgb, var(--accent) 7%, transparent);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;padding:12px 16px;font-size:.85rem;color:var(--text);line-height:1.6}
+.pro-tip strong{color:var(--accent);font-size:.72rem;letter-spacing:.07em;text-transform:uppercase;display:block;margin-bottom:4px}
+
+/* PREV / NEXT NAV */
+.page-nav{display:flex;justify-content:space-between;align-items:center;max-width:1000px;margin:0 auto;padding:20px 32px 52px;position:relative;z-index:1;width:100%;flex-wrap:wrap;gap:12px}
+.page-nav-btn{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 20px;text-decoration:none;color:var(--text);font-size:.88rem;transition:all .2s}
+.page-nav-btn:hover{border-color:var(--gold);color:var(--gold)}
+.page-nav-btn.hub{color:var(--muted);border-style:dashed}
+.page-nav-btn.hub:hover{color:var(--gold)}
+.page-nav-label{font-size:.68rem;color:var(--muted);display:block;text-transform:uppercase;letter-spacing:.06em}
+.page-nav-title{font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:.03em}
+
+footer{background:var(--black);border-top:1px solid var(--border);padding:22px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;position:relative;z-index:1;margin-top:auto}
+.footer-brand{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:.08em;color:var(--gold)}
+.footer-copy{font-size:.75rem;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="/app/{{ token }}">🧠 Claude's Brain</a>
+  <div class="nav-right">
+    <a href="/app/{{ token }}">← Hub</a>
+    <a href="/download/{{ token }}">Downloads</a>
+  </div>
+</nav>
+
+<!-- Chapter pills nav -->
+<div class="chapter-nav">
+  {% for s in sections %}
+  <a class="ch-pill {% if s.slug == section.slug %}active{% endif %}"
+     href="/app/{{ token }}/section/{{ s.slug }}"
+     style="{% if s.slug == section.slug %}--accent:{{ s.color }}{% endif %}">
+    {{ s.icon }} {{ s.title }}
+  </a>
+  {% endfor %}
+</div>
+
+<!-- Section hero -->
+<div class="section-hero">
+  <div class="section-badge">Chapter {{ section.chapter }} of {{ sections|length }}</div>
+  <span class="section-icon">{{ section.icon }}</span>
+  <h1 class="section-title">{{ section.title }}</h1>
+  <p class="section-tagline">{{ section.tagline }}</p>
+  <p class="section-desc">{{ section.description }}</p>
+</div>
+
+<div class="divider"></div>
+
+<!-- Layer cards -->
+<div class="layers-wrap">
+  <div class="layers-title">{{ section.layers|length }} Sub-Capabilities — click to expand</div>
+
+  {% for layer in section.layers %}
+  <div class="layer-card">
+    <input class="layer-toggle" type="checkbox" id="layer-{{ loop.index }}"
+           {% if loop.index == 1 %}checked{% endif %}>
+    <label class="layer-head" for="layer-{{ loop.index }}">
+      <div class="layer-head-left">
+        <span class="layer-num">{{ '%02d' % loop.index }}</span>
+        <span class="layer-head-title">{{ layer.title }}</span>
+      </div>
+      <span class="layer-chevron">▾</span>
+    </label>
+    <div class="layer-body">
+      <div class="layer-body-inner">
+        <p class="layer-desc">{{ layer.description }}</p>
+        <div class="pro-tip">
+          <strong>⚡ Pro Tip</strong>
+          {{ layer.pro_tip }}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Prev / Next navigation -->
+<div class="page-nav">
+  {% if prev_section %}
+  <a class="page-nav-btn" href="/app/{{ token }}/section/{{ prev_section.slug }}">
+    <span>←</span>
+    <span>
+      <span class="page-nav-label">Previous</span>
+      <span class="page-nav-title">{{ prev_section.icon }} {{ prev_section.title }}</span>
+    </span>
+  </a>
+  {% else %}
+  <a class="page-nav-btn hub" href="/app/{{ token }}">
+    ⬡ Back to Hub
+  </a>
+  {% endif %}
+
+  <a class="page-nav-btn hub" href="/app/{{ token }}">
+    ⬡ Hub
+  </a>
+
+  {% if next_section %}
+  <a class="page-nav-btn" href="/app/{{ token }}/section/{{ next_section.slug }}">
+    <span>
+      <span class="page-nav-label">Next</span>
+      <span class="page-nav-title">{{ next_section.icon }} {{ next_section.title }}</span>
+    </span>
+    <span>→</span>
+  </a>
+  {% else %}
+  <a class="page-nav-btn hub" href="/app/{{ token }}">
+    ⬡ Back to Hub
+  </a>
+  {% endif %}
+</div>
+
+<footer>
+  <div class="footer-brand">Claude's Brain</div>
+  <div class="footer-copy">Building Claude's Brain &mdash; St. Pete AI &copy; 2025</div>
+</footer>
+
+</body>
+</html>
