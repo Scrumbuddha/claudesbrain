@@ -30,6 +30,33 @@ def _get_purchase(token):
     return p
 
 
+@brain_app_bp.route('/demo')
+def hub_demo():
+    return render_template('app/hub.html', token='demo', purchase=None,
+                           sections=SECTIONS, petals=_petal_positions(),
+                           cx=CX, cy=CY)
+
+
+@brain_app_bp.route('/demo/section/<slug>')
+def section_demo(slug):
+    if slug not in SECTION_MAP:
+        abort(404)
+    slugs = [s['slug'] for s in SECTIONS]
+    idx = slugs.index(slug)
+    prev_section = SECTIONS[idx - 1] if idx > 0 else None
+    next_section = SECTIONS[idx + 1] if idx < len(SECTIONS) - 1 else None
+    return render_template(
+        'app/section.html',
+        token='demo',
+        purchase=None,
+        section=SECTION_MAP[slug],
+        sections=SECTIONS,
+        prev_section=prev_section,
+        next_section=next_section,
+        current_idx=idx,
+    )
+
+
 @brain_app_bp.route('/<token>')
 def hub(token):
     purchase = _get_purchase(token)
