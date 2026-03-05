@@ -38,6 +38,27 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .token-cell{font-family:monospace;font-size:.78rem;color:var(--muted);max-width:120px;overflow:hidden;text-overflow:ellipsis}
 .empty-state{text-align:center;padding:60px 32px;color:var(--muted)}
 .empty-state p{font-size:1rem;margin-bottom:8px}
+.file-mgmt{margin-bottom:32px}
+.file-mgmt-title{font-size:.75rem;font-weight:600;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-bottom:12px}
+.file-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.file-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.file-card-info{flex:1}
+.file-card-name{font-weight:600;color:var(--white);margin-bottom:4px}
+.file-card-meta{font-size:.8rem;color:var(--muted)}
+.file-status-ok{color:var(--green);font-size:.8rem;font-weight:600;letter-spacing:.04em}
+.file-status-missing{color:var(--red);font-size:.8rem;font-weight:600;letter-spacing:.04em}
+.btn-upload{display:inline-flex;align-items:center;gap:6px;background:rgba(201,162,39,.12);border:1px solid var(--gold-dim);border-radius:6px;padding:8px 16px;color:var(--gold);font-size:.83rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s}
+.btn-upload:hover{background:rgba(201,162,39,.22)}
+.btn-action{display:inline-flex;align-items:center;gap:4px;border-radius:4px;padding:5px 10px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid;transition:all .2s}
+.btn-grant{background:rgba(39,174,96,.1);border-color:rgba(39,174,96,.4);color:#4ecb71}
+.btn-grant:hover{background:rgba(39,174,96,.2)}
+.btn-revoke{background:rgba(192,57,43,.1);border-color:rgba(192,57,43,.4);color:#e55}
+.btn-revoke:hover{background:rgba(192,57,43,.2)}
+.status-revoked{color:var(--muted);font-weight:600;font-size:.8rem;text-transform:uppercase;letter-spacing:.04em}
+.flash-messages{margin-bottom:20px}
+.flash{padding:12px 16px;border-radius:6px;font-size:.88rem;margin-bottom:8px}
+.flash-success{background:rgba(39,174,96,.1);border:1px solid rgba(39,174,96,.3);color:#4ecb71}
+.flash-error{background:rgba(192,57,43,.1);border:1px solid rgba(192,57,43,.3);color:#e55}
 </style>
 </head>
 <body>
@@ -52,6 +73,41 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
 <div class="container">
   <h1 class="page-title">Purchase Dashboard</h1>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="flash-messages">
+    {% for category, message in messages %}
+    <div class="flash flash-{{ category }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  <!-- File Management -->
+  <div class="file-mgmt">
+    <div class="file-mgmt-title">Ebook Files</div>
+    <div class="file-cards">
+      {% for fmt, label in [('pdf','PDF'), ('docx','DOCX')] %}
+      <div class="file-card">
+        <div class="file-card-info">
+          <div class="file-card-name">building-claudes-brain.{{ fmt }}</div>
+          {% if files[fmt] %}
+          <div class="file-status-ok">&#10003; Uploaded</div>
+          <div class="file-card-meta">{{ '%.1f' | format(files[fmt].size / 1024) }} KB &middot; {{ files[fmt].last_modified.strftime('%Y-%m-%d %H:%M') }} UTC</div>
+          {% else %}
+          <div class="file-status-missing">&#9888; Not uploaded</div>
+          <div class="file-card-meta">Customers cannot download this format</div>
+          {% endif %}
+        </div>
+        <form method="post" action="{{ url_for('admin.upload_file', fmt=fmt) }}" enctype="multipart/form-data">
+          <input type="file" name="file" id="file-{{ fmt }}" accept=".{{ fmt }}" style="display:none" onchange="this.form.submit()">
+          <label for="file-{{ fmt }}" class="btn-upload">&#8593; {{ 'Replace' if files[fmt] else 'Upload' }} {{ label }}</label>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
 
   <div class="stats-grid">
     <div class="stat-card">
@@ -86,6 +142,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <th>Status</th>
           <th>Downloads</th>
           <th>Token</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -96,11 +153,19 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <td>{{ p.name or '—' }}</td>
           <td style="font-family:monospace;font-size:.8rem">{{ p.paypal_txn_id }}</td>
           <td>${{ '%.2f' | format(p.amount) }} {{ p.currency }}</td>
-          <td>
-            <span class="status-{{ p.status }}">{{ p.status }}</span>
-          </td>
+          <td><span class="status-{{ p.status }}">{{ p.status }}</span></td>
           <td>{{ p.download_count }} / {{ p.max_downloads }}</td>
           <td class="token-cell" title="{{ p.download_token }}">{{ p.download_token[:12] }}...</td>
+          <td style="white-space:nowrap;display:flex;gap:6px">
+            <form method="post" action="{{ url_for('admin.grant_downloads', purchase_id=p.id) }}" style="display:inline">
+              <button class="btn-action btn-grant" title="Add 5 downloads">+5 DL</button>
+            </form>
+            {% if p.status != 'revoked' %}
+            <form method="post" action="{{ url_for('admin.revoke_access', purchase_id=p.id) }}" style="display:inline" onsubmit="return confirm('Revoke access for {{ p.email }}?')">
+              <button class="btn-action btn-revoke" title="Revoke access">Revoke</button>
+            </form>
+            {% endif %}
+          </td>
         </tr>
         {% endfor %}
       </tbody>

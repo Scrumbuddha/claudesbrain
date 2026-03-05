@@ -1,9 +1,32 @@
+import os
 import uuid
+import boto3
 import requests
-from flask import Blueprint, request, redirect, url_for, render_template, send_from_directory, abort, current_app
+from botocore.exceptions import ClientError
+from flask import Blueprint, request, redirect, url_for, render_template, abort, current_app
 from flask_mail import Message
 
 from models import db, Purchase
+
+S3_BUCKET = os.environ.get('EBOOK_S3_BUCKET', '')
+S3_KEYS = {
+    'pdf':  'ebooks/building-claudes-brain.pdf',
+    'docx': 'ebooks/building-claudes-brain.docx',
+}
+S3_FILENAMES = {
+    'pdf':  'building-claudes-brain.pdf',
+    'docx': 'building-claudes-brain.docx',
+}
+
+
+def _presigned_url(fmt):
+    s3 = boto3.client('s3', region_name='us-east-1')
+    return s3.generate_presigned_url(
+        'get_object',
+        Params={'Bucket': S3_BUCKET, 'Key': S3_KEYS[fmt],
+                'ResponseContentDisposition': f'attachment; filename="{S3_FILENAMES[fmt]}"'},
+        ExpiresIn=900  # 15 minutes
+    )
 
 payments_bp = Blueprint('payments', __name__)
 
@@ -129,6 +152,8 @@ def download_page(token):
     purchase = Purchase.query.filter_by(download_token=token).first()
     if not purchase:
         abort(404)
+    if purchase.status == 'revoked':
+        return render_template('download.html', purchase=purchase, error='Access has been revoked. Contact mark@scrumbuddhism.com for help.'), 403
     if purchase.status != 'confirmed':
         return render_template('download.html', purchase=purchase, error='Payment not confirmed yet.'), 403
     if purchase.download_count >= purchase.max_downloads:
@@ -138,8 +163,8 @@ def download_page(token):
 
 @payments_bp.route('/download/<token>/<fmt>')
 def download_file(token, fmt):
-    """Serve the actual ebook file (PDF or DOCX)."""
-    if fmt not in ('pdf', 'docx'):
+    """Redirect to S3 pre-signed URL for the ebook file."""
+    if fmt not in S3_KEYS:
         abort(400)
 
     purchase = Purchase.query.filter_by(download_token=token, status='confirmed').first()
@@ -148,16 +173,12 @@ def download_file(token, fmt):
     if purchase.download_count >= purchase.max_downloads:
         abort(403)
 
-    # Map format to filename
-    filenames = {
-        'pdf': 'building-claudes-brain.pdf',
-        'docx': 'building-claudes-brain.docx',
-    }
-    filename = filenames[fmt]
-    downloads_dir = current_app.root_path + '/static/downloads'
+    try:
+        url = _presigned_url(fmt)
+    except ClientError:
+        abort(500)
 
-    # Increment download count
     purchase.download_count += 1
     db.session.commit()
 
-    return send_from_directory(downloads_dir, filename, as_attachment=True)
+    return redirect(url)
