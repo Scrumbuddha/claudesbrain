@@ -3,7 +3,7 @@ import uuid
 import boto3
 import requests
 from botocore.exceptions import ClientError
-from flask import Blueprint, request, redirect, url_for, render_template, abort, current_app
+from flask import Blueprint, request, redirect, url_for, render_template, abort, current_app, jsonify
 from flask_mail import Message
 
 from models import db, Purchase
@@ -17,6 +17,28 @@ S3_FILENAMES = {
     'pdf':  'building-claudes-brain.pdf',
     'docx': 'building-claudes-brain.docx',
 }
+
+PAYPAL_CLIENT_ID = os.environ.get('PAYPAL_CLIENT_ID', '')
+PAYPAL_SECRET = os.environ.get('PAYPAL_SECRET', '')
+PAYPAL_RECEIVER_EMAIL = os.environ.get('PAYPAL_RECEIVER_EMAIL', 'mark@scrumbuddhism.com')
+PAYPAL_API_LIVE = 'https://api-m.paypal.com'
+PAYPAL_API_SANDBOX = 'https://api-m.sandbox.paypal.com'
+
+
+def _paypal_base():
+    from flask import current_app
+    return PAYPAL_API_SANDBOX if current_app.config.get('PAYPAL_SANDBOX') else PAYPAL_API_LIVE
+
+
+def _paypal_token():
+    resp = requests.post(
+        f'{_paypal_base()}/v1/oauth2/token',
+        auth=(PAYPAL_CLIENT_ID, PAYPAL_SECRET),
+        data={'grant_type': 'client_credentials'},
+        timeout=15,
+    )
+    resp.raise_for_status()
+    return resp.json()['access_token']
 
 
 def _presigned_url(fmt):
@@ -68,7 +90,7 @@ def ipn():
     if payment_status != 'Completed':
         return 'Payment not completed', 200
 
-    if receiver_email.lower() != 'mark@scrumbuddhism.com':
+    if receiver_email.lower() != PAYPAL_RECEIVER_EMAIL.lower():
         return 'Wrong receiver', 200
 
     try:
@@ -106,6 +128,107 @@ def ipn():
     return 'OK', 200
 
 
+@payments_bp.route('/create-order', methods=['POST'])
+def create_order():
+    """Create a PayPal order — called by Smart Buttons JS."""
+    try:
+        token = _paypal_token()
+        resp = requests.post(
+            f'{_paypal_base()}/v2/checkout/orders',
+            headers={'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'},
+            json={
+                'intent': 'CAPTURE',
+                'purchase_units': [{
+                    'amount': {'currency_code': 'USD', 'value': '6.99'},
+                    'description': "Building Claude's Brain (PDF + DOCX)",
+                }],
+            },
+            timeout=15,
+        )
+        resp.raise_for_status()
+        return jsonify({'id': resp.json()['id']})
+    except Exception as e:
+        current_app.logger.error(f'create-order error: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+def _get_order(token, order_id):
+    """Fetch order details from PayPal."""
+    resp = requests.get(
+        f'{_paypal_base()}/v2/checkout/orders/{order_id}',
+        headers={'Authorization': f'Bearer {token}'},
+        timeout=15,
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
+@payments_bp.route('/capture-order', methods=['POST'])
+def capture_order():
+    """Capture a PayPal order after customer approves — creates Purchase and sends email."""
+    data = request.get_json()
+    order_id = data.get('orderID') if data else None
+    if not order_id:
+        return jsonify({'error': 'Missing orderID'}), 400
+    try:
+        token = _paypal_token()
+        resp = requests.post(
+            f'{_paypal_base()}/v2/checkout/orders/{order_id}/capture',
+            headers={'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'},
+            timeout=15,
+        )
+        if resp.status_code == 422:
+            # Order already captured — fetch order details to recover the purchase
+            current_app.logger.warning(f'capture-order 422 for order {order_id}, fetching order details')
+            try:
+                order = _get_order(token, order_id)
+            except Exception as e:
+                current_app.logger.error(f'capture-order 422 recovery failed: {e}')
+                return jsonify({'error': 'Payment already processed. Check your email for a download link or contact mark@scrumbuddhism.com'}), 422
+        else:
+            resp.raise_for_status()
+            order = resp.json()
+    except Exception as e:
+        current_app.logger.error(f'capture-order error: {e}')
+        return jsonify({'error': str(e)}), 500
+
+    if order.get('status') != 'COMPLETED':
+        return jsonify({'error': f"Payment status: {order.get('status')}"}), 400
+
+    capture = order['purchase_units'][0]['payments']['captures'][0]
+    txn_id = capture['id']
+    amount = float(capture['amount']['value'])
+    currency = capture['amount']['currency_code']
+    payer = order.get('payer', {})
+    payer_email = payer.get('email_address', '')
+    name = payer.get('name', {})
+    payer_name = f"{name.get('given_name', '')} {name.get('surname', '')}".strip()
+
+    # Deduplicate
+    existing = Purchase.query.filter_by(paypal_txn_id=txn_id).first()
+    if existing:
+        return jsonify({'redirect': url_for('payments.download_page', token=existing.download_token, _external=True)})
+
+    purchase = Purchase(
+        email=payer_email,
+        name=payer_name,
+        paypal_txn_id=txn_id,
+        amount=amount,
+        currency=currency,
+        status='confirmed',
+        download_token=uuid.uuid4().hex,
+    )
+    db.session.add(purchase)
+    db.session.commit()
+
+    try:
+        _send_receipt_email(purchase)
+    except Exception as e:
+        current_app.logger.error(f'Receipt email failed: {e}')
+
+    return jsonify({'redirect': url_for('payments.download_page', token=purchase.download_token, _external=True)})
+
+
 def _send_receipt_email(purchase):
     """Send receipt email with download link."""
     from app import mail
@@ -114,7 +237,7 @@ def _send_receipt_email(purchase):
 
     msg = Message(
         subject="Your copy of Building Claude's Brain",
-        sender=current_app.config.get('MAIL_DEFAULT_SENDER', 'noreply@stpeteai.org'),
+        sender=current_app.config.get('MAIL_DEFAULT_SENDER', 'noreply@claudesbrain.com'),
         recipients=[purchase.email],
     )
     msg.html = f"""
