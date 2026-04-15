@@ -81,7 +81,7 @@ SECTIONS = [
             },
             {
                 "title": "Environment Variables",
-                "description": "API keys, feature flags, and environment-specific config can be injected via settings without hardcoding them. Claude can read env vars but cannot expose them in output — a safe channel for secrets.",
+                "description": "API keys, feature flags, and environment-specific config can be injected via settings without hardcoding them. Claude can read env vars but cannot expose them in output — a safe channel for secrets. New feature flags like CLAUDE_CODE_ENABLE_AWAY_SUMMARY (for /recap auto-trigger) are also set here.",
                 "pro_tip": "Never put secrets in CLAUDE.md. Use env vars in settings.json combined with a .gitignore rule — settings.json with secrets should never be committed."
             },
             {
@@ -148,8 +148,8 @@ SECTIONS = [
         "layers": [
             {
                 "title": "Why Isolated Context",
-                "description": "Every sub-agent starts with a fresh context window. This solves the token ceiling problem — complex tasks that would overflow one session are split across agents, each expert in its slice. Results are returned to the parent agent as structured output.",
-                "pro_tip": "If a task requires reading more than 10 files or generating more than 2,000 lines of content, it's a candidate for a sub-agent. Don't fight the context limit — route around it."
+                "description": "Every sub-agent starts with a fresh context window, keeping the parent session clean. Even with Opus 4.6's 1M token context window, isolated agents deliver two things a single session cannot: true parallelism and clean domain separation. Multiple agents can research, write, and review simultaneously — each expert in its slice.",
+                "pro_tip": "The primary value of sub-agents is now parallel execution and specialization, not just overflow handling. Run your Dev Agent and QA Agent simultaneously — their combined wall-clock time beats running them sequentially every time."
             },
             {
                 "title": "Product Owner Agent",
@@ -182,8 +182,18 @@ SECTIONS = [
                 "pro_tip": "Always give the Architect Agent read access to all existing ADRs before asking it to propose a new architecture. Without prior decisions, it will propose patterns that contradict what you've already decided."
             },
             {
+                "title": "Defining Agents in .claude/agents/",
+                "description": "Custom sub-agents are now defined as Markdown files in .claude/agents/ with YAML frontmatter specifying name, model, tools, and system prompt. Committed to git, they become version-controlled team infrastructure — every developer gets the same agent team when they pull the repo.",
+                "pro_tip": "Right-size each agent's model. Use claude-haiku-4-5 for file-scanning QA agents, claude-sonnet-4-6 for Dev agents writing code, and claude-opus-4-6 for Architect agents reasoning over ADRs. Model budget is the highest-leverage setting in the frontmatter."
+            },
+            {
+                "title": "Parallel Sessions in the Desktop App",
+                "description": "The redesigned Claude Code desktop app (April 2026) manages all sub-agent sessions from a single sidebar. Filter sessions by status, project, or environment. Open a side chat (⌘+;) mid-task to ask questions that pull parent context without bleeding back in. Three view modes — Verbose, Normal, Summary — let you dial from full transparency to results-only.",
+                "pro_tip": "Run your Dev Agent and QA Agent as parallel sessions in the desktop app. Watch both in Summary mode; switch to Verbose only when one fails. You get the benefit of parallel execution with readable signal, not noise."
+            },
+            {
                 "title": "Connections to Other Layers",
-                "description": "Sub-agents are launched using the Agent tool, which is enabled in Settings. They read CLAUDE.md for context, use MCP servers for external data, draw on the Knowledge Base, and can invoke Slash Commands and Skills.",
+                "description": "Sub-agents are defined in .claude/agents/, governed by Settings, inherit rules from CLAUDE.md, and are invoked via Slash Commands or automatically. The agent definition file is the bridge between all layers — it names the tools, the model, and the mandate in one place.",
                 "pro_tip": "Model your agent team on your real team structure. If you have a dedicated QA person, you need a QA Agent. Agents without human counterparts tend to have unclear mandates."
             }
         ]
@@ -264,6 +274,11 @@ SECTIONS = [
                 "pro_tip": "Schedule /standup as a hook that runs automatically at 9am via a cron job. The summary is ready before the team meeting without anyone remembering to run it."
             },
             {
+                "title": "/recap — Session Context Recovery",
+                "description": "The built-in /recap command generates a summary of what happened in a session when you return after being away. Configurable in /config to auto-trigger on resume, or invoke manually. In long-running agent workflows, /recap gives sub-agents re-entry context without re-reading the full transcript.",
+                "pro_tip": "Set /recap to auto-run on session resume for any agent doing multi-hour work. Enable via CLAUDE_CODE_ENABLE_AWAY_SUMMARY or /config. A sub-agent that re-reads its own recap resumes cleanly without repeating steps it already completed."
+            },
+            {
                 "title": "Custom Workflow Commands",
                 "description": "Any repeating process can become a command: /release-notes, /onboard-engineer, /incident-report. Commands can accept arguments (via $ARGUMENTS), include sub-agent launches, and produce structured output for downstream tools.",
                 "pro_tip": "Build commands from real pain points. When a team member says 'I always have to do X, Y, Z before a release', that's a /release-check command waiting to be written."
@@ -320,8 +335,13 @@ SECTIONS = [
                 "pro_tip": "Be specific with context conditions. A Skill with condition 'when working in this project' fires constantly. A Skill with condition 'when editing files in src/payments/' fires precisely when needed."
             },
             {
+                "title": "Routines — Cloud-Hosted Automation",
+                "description": "Routines (April 2026) are saved Claude Code configurations — a prompt, one or more repos, and a set of connectors — that run on Anthropic-managed cloud infrastructure. Three trigger modes: scheduled (cron-style), API trigger (HTTP POST with bearer token), and GitHub trigger (fires on matching repo events like push or PR). Your laptop doesn't need to be on.",
+                "pro_tip": "Start with a GitHub trigger Routine: on PR opened → run /review → post comment. This is the highest-ROI first Routine for any dev team. Limits: Pro=5/day, Max=15/day, Team/Enterprise=25/day — budget accordingly."
+            },
+            {
                 "title": "Connections to Other Layers",
-                "description": "Skills are the capstone layer — they can invoke Slash Commands, launch Sub-Agents, query MCP servers, and reference the Knowledge Base. A Skill that fires automatically and orchestrates the full system is Claude working at maximum leverage.",
+                "description": "Skills are the capstone layer — they can invoke Slash Commands, launch Sub-Agents, query MCP servers, and reference the Knowledge Base. Routines extend this further: a Skill packaged as a Routine runs your full 7-layer system automatically on a schedule, without any human trigger.",
                 "pro_tip": "Map your Skills to the radial diagram. Each Skill that touches multiple outer layers is a high-leverage automation. Skills that only touch one layer might be better implemented as part of that layer directly."
             }
         ]
