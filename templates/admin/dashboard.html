@@ -149,6 +149,13 @@ input[type=checkbox]{accent-color:var(--gold);width:15px;height:15px;cursor:poin
         <input type="text" name="name" placeholder="Optional" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:4px;padding:8px 12px;color:var(--white);font-size:.9rem;width:160px;outline:none">
       </div>
       <div>
+        <label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">Tier</label>
+        <select name="tier" style="background:#1a1a28;border:1px solid var(--border);border-radius:4px;padding:8px 12px;color:var(--white);font-size:.9rem;width:110px;outline:none">
+          <option value="standard">Standard</option>
+          <option value="pro">Pro</option>
+        </select>
+      </div>
+      <div>
         <label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">Amount</label>
         <input type="text" name="amount" value="6.99" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:4px;padding:8px 12px;color:var(--white);font-size:.9rem;width:80px;outline:none">
       </div>
@@ -225,6 +232,7 @@ input[type=checkbox]{accent-color:var(--gold);width:15px;height:15px;cursor:poin
           <th>Name</th>
           <th>Txn ID</th>
           <th>Amount</th>
+          <th>Tier</th>
           <th>Status</th>
           <th>Downloads</th>
           <th>Token</th>
@@ -240,6 +248,7 @@ input[type=checkbox]{accent-color:var(--gold);width:15px;height:15px;cursor:poin
           <td>{{ p.name or '—' }}</td>
           <td style="font-family:monospace;font-size:.8rem">{{ p.paypal_txn_id }}</td>
           <td>${{ '%.2f' | format(p.amount) }} {{ p.currency }}</td>
+          <td><span style="font-size:.78rem;font-weight:600;padding:2px 7px;border-radius:3px;background:{% if p.tier == 'pro' %}rgba(201,162,39,.18);color:#C9A227{% else %}rgba(122,122,154,.15);color:#7a7a9a{% endif %}">{{ p.tier or 'standard' }}</span></td>
           <td><span class="status-{{ p.status }}">{{ p.status }}</span></td>
           <td>{{ p.download_count }} / {{ p.max_downloads }}</td>
           <td class="token-cell" title="{{ p.download_token }}">{{ p.download_token[:12] }}...</td>
@@ -247,6 +256,11 @@ input[type=checkbox]{accent-color:var(--gold);width:15px;height:15px;cursor:poin
             <form method="post" action="{{ url_for('admin.grant_downloads', purchase_id=p.id) }}" style="display:inline">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="btn-action btn-grant" title="Add 5 downloads">+5 DL</button>
+            </form>
+            <form method="post" action="{{ url_for('admin.set_tier', purchase_id=p.id) }}" style="display:inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="tier" value="{{ 'standard' if p.tier == 'pro' else 'pro' }}">
+              <button class="btn-action" style="background:{% if p.tier == 'pro' %}rgba(122,122,154,.2);color:#7a7a9a{% else %}rgba(201,162,39,.2);color:#C9A227{% endif %};border:none;border-radius:4px;padding:5px 10px;font-size:.78rem;cursor:pointer" title="{{ 'Downgrade to Standard' if p.tier == 'pro' else 'Upgrade to Pro' }}">{{ '→Std' if p.tier == 'pro' else '→Pro' }}</button>
             </form>
             {% if p.status != 'revoked' %}
             <form method="post" action="{{ url_for('admin.revoke_access', purchase_id=p.id) }}" style="display:inline" onsubmit="return confirm('Revoke access for {{ p.email }}?')">

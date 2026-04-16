@@ -122,6 +122,19 @@ def grant_downloads(purchase_id):
     return redirect(url_for('admin.dashboard'))
 
 
+@admin_bp.route('/purchase/<int:purchase_id>/set-tier', methods=['POST'])
+@login_required
+def set_tier(purchase_id):
+    p = Purchase.query.get_or_404(purchase_id)
+    tier = request.form.get('tier', 'standard')
+    if tier not in ('standard', 'pro'):
+        tier = 'standard'
+    p.tier = tier
+    db.session.commit()
+    flash(f'Tier for {p.email} set to {tier}.', 'success')
+    return redirect(url_for('admin.dashboard'))
+
+
 @admin_bp.route('/purchase/<int:purchase_id>/revoke', methods=['POST'])
 @login_required
 def revoke_access(purchase_id):
@@ -176,6 +189,9 @@ def create_purchase():
     email = request.form.get('email', '').strip()
     name = request.form.get('name', '').strip()
     amount = request.form.get('amount', '6.99').strip()
+    tier = request.form.get('tier', 'standard').strip()
+    if tier not in ('standard', 'pro'):
+        tier = 'standard'
     if not email:
         flash('Email is required.', 'error')
         return redirect(url_for('admin.dashboard'))
@@ -190,6 +206,7 @@ def create_purchase():
         amount=amount,
         currency='USD',
         status='confirmed',
+        tier=tier,
         download_token=uuid.uuid4().hex,
     )
     db.session.add(p)
