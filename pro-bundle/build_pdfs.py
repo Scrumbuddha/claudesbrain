@@ -119,13 +119,34 @@ def parse_markdown(md_text, styles):
     code_lang = ""
     first_h1 = True
 
+    def wrap_code_line(line, max_chars=90):
+        """Wrap a single code line at max_chars, preserving leading indent."""
+        if len(line) <= max_chars:
+            return [line]
+        indent = len(line) - len(line.lstrip())
+        prefix = ' ' * indent + '  '  # continuation indent
+        out = []
+        while len(line) > max_chars:
+            # Try to break at a space near the limit
+            break_at = line.rfind(' ', indent, max_chars)
+            if break_at <= indent:
+                break_at = max_chars
+            out.append(line[:break_at])
+            line = prefix + line[break_at:].lstrip()
+        out.append(line)
+        return out
+
     def flush_code():
         nonlocal code_buffer
         if not code_buffer:
             return
+        # Wrap long lines so they don't overflow the page
+        wrapped = []
+        for line in code_buffer:
+            wrapped.extend(wrap_code_line(line))
         # Split large code blocks into ~40-line chunks so they fit on a page
         CHUNK = 40
-        chunks = [code_buffer[j:j+CHUNK] for j in range(0, len(code_buffer), CHUNK)]
+        chunks = [wrapped[j:j+CHUNK] for j in range(0, len(wrapped), CHUNK)]
         flowables.append(Spacer(1, 4))
         for chunk in chunks:
             text = '\n'.join(chunk)
