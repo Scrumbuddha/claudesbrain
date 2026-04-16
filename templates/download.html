@@ -60,12 +60,23 @@ footer{background:var(--black);border-top:1px solid var(--border);padding:40px 3
     {% if purchase.tier == 'pro' %}
     <div style="margin-top:48px;text-align:left;background:#14141f;border:1px solid #2a2a3d;border-radius:10px;padding:32px">
       <h2 style="font-family:'Roboto',sans-serif;font-weight:900;font-size:1.3rem;color:#C9A227;letter-spacing:.06em;margin-bottom:6px">&#127381; Pro Bundle Bonus Files</h2>
-      <p style="font-size:.85rem;color:#7a7a9a;margin-bottom:24px">Your Pro tier includes 4 additional PDF resources.</p>
-      <div style="display:flex;flex-direction:column;gap:12px">
-        <a class="dl-btn dl-btn-pdf" style="justify-content:flex-start" href="{{ url_for('payments.download_pro_file', token=purchase.download_token, idx=0) }}">&#128196; Prompt Library — 55+ ready-to-use prompts</a>
-        <a class="dl-btn dl-btn-pdf" style="justify-content:flex-start" href="{{ url_for('payments.download_pro_file', token=purchase.download_token, idx=1) }}">&#128196; CLAUDE.md Starter Kit — 7 templates</a>
-        <a class="dl-btn dl-btn-pdf" style="justify-content:flex-start" href="{{ url_for('payments.download_pro_file', token=purchase.download_token, idx=2) }}">&#128196; Slash Command Library — 10 commands</a>
-        <a class="dl-btn dl-btn-pdf" style="justify-content:flex-start" href="{{ url_for('payments.download_pro_file', token=purchase.download_token, idx=3) }}">&#128196; Sub-Agent Templates — 8 agents</a>
+      <p style="font-size:.85rem;color:#7a7a9a;margin-bottom:24px">4 resources — each available as <strong style="color:#d4d4e8">Markdown</strong> (paste directly into Claude) and <strong style="color:#d4d4e8">PDF</strong>.</p>
+      {% set pro_files = [
+        (0, 'Prompt Library', '55+ ready-to-use prompts'),
+        (1, 'CLAUDE.md Starter Kit', '7 templates'),
+        (2, 'Slash Command Library', '10 commands'),
+        (3, 'Sub-Agent Templates', '8 agents')
+      ] %}
+      <div style="display:flex;flex-direction:column;gap:16px">
+        {% for idx, title, desc in pro_files %}
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;background:#1a1a28;border:1px solid #2a2a3d;border-radius:6px;flex-wrap:wrap">
+          <span style="font-size:.92rem;color:#d4d4e8;font-weight:500">&#128196; {{ title }} <span style="color:#7a7a9a;font-weight:400;font-size:.82rem">— {{ desc }}</span></span>
+          <div style="display:flex;gap:8px;flex-shrink:0">
+            <a href="{{ url_for('payments.download_pro_file', token=purchase.download_token, idx=idx, fmt='md') }}" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:4px;font-weight:600;font-size:.8rem;text-decoration:none;background:rgba(201,162,39,.15);border:1px solid rgba(201,162,39,.4);color:#C9A227">&#11015; Markdown</a>
+            <a href="{{ url_for('payments.download_pro_file', token=purchase.download_token, idx=idx, fmt='pdf') }}" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:4px;font-weight:600;font-size:.8rem;text-decoration:none;background:rgba(192,57,43,.12);border:1px solid rgba(192,57,43,.4);color:#e55">&#11015; PDF</a>
+          </div>
+        </div>
+        {% endfor %}
       </div>
     </div>
     {% endif %}

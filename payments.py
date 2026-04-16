@@ -18,29 +18,36 @@ S3_FILENAMES = {
     'docx': 'building-claudes-brain.docx',
 }
 
-# Pro Bundle — 4 bonus PDFs
-# 'key' is the exact S3 object key; 'filename' is the ASCII-safe download name
-# (S3 Content-Disposition header only accepts ISO-8859-1)
+# Pro Bundle — 4 bonus files (PDF + Markdown)
+# 'key_pdf' / 'key_md' are exact S3 keys; 'filename_*' are ASCII-safe download names
 PRO_BUNDLE_FILES = [
     {
-        'key':      "ebooks/pro-bundle/Claude's Brain \u2014 Prompt Library.pdf",
-        'filename': "Claudes-Brain-Prompt-Library.pdf",
-        'label':    'Prompt Library (55+ prompts)',
+        'key_pdf':      "ebooks/pro-bundle/Claude's Brain \u2014 Prompt Library.pdf",
+        'key_md':       "ebooks/pro-bundle/Claudes-Brain-Prompt-Library.md",
+        'filename_pdf': "Claudes-Brain-Prompt-Library.pdf",
+        'filename_md':  "Claudes-Brain-Prompt-Library.md",
+        'label':        'Prompt Library (55+ prompts)',
     },
     {
-        'key':      "ebooks/pro-bundle/Claude's Brain \u2014 CLAUDE.md Starter Kit.pdf",
-        'filename': "Claudes-Brain-CLAUDE-md-Starter-Kit.pdf",
-        'label':    'CLAUDE.md Starter Kit (7 templates)',
+        'key_pdf':      "ebooks/pro-bundle/Claude's Brain \u2014 CLAUDE.md Starter Kit.pdf",
+        'key_md':       "ebooks/pro-bundle/Claudes-Brain-CLAUDE-md-Starter-Kit.md",
+        'filename_pdf': "Claudes-Brain-CLAUDE-md-Starter-Kit.pdf",
+        'filename_md':  "Claudes-Brain-CLAUDE-md-Starter-Kit.md",
+        'label':        'CLAUDE.md Starter Kit (7 templates)',
     },
     {
-        'key':      "ebooks/pro-bundle/Claude's Brain \u2014 Slash Command Library.pdf",
-        'filename': "Claudes-Brain-Slash-Command-Library.pdf",
-        'label':    'Slash Command Library (10 commands)',
+        'key_pdf':      "ebooks/pro-bundle/Claude's Brain \u2014 Slash Command Library.pdf",
+        'key_md':       "ebooks/pro-bundle/Claudes-Brain-Slash-Command-Library.md",
+        'filename_pdf': "Claudes-Brain-Slash-Command-Library.pdf",
+        'filename_md':  "Claudes-Brain-Slash-Command-Library.md",
+        'label':        'Slash Command Library (10 commands)',
     },
     {
-        'key':      "ebooks/pro-bundle/Claude's Brain \u2014 Sub-Agent Templates.pdf",
-        'filename': "Claudes-Brain-Sub-Agent-Templates.pdf",
-        'label':    'Sub-Agent Templates (8 agents)',
+        'key_pdf':      "ebooks/pro-bundle/Claude's Brain \u2014 Sub-Agent Templates.pdf",
+        'key_md':       "ebooks/pro-bundle/Claudes-Brain-Sub-Agent-Templates.md",
+        'filename_pdf': "Claudes-Brain-Sub-Agent-Templates.pdf",
+        'filename_md':  "Claudes-Brain-Sub-Agent-Templates.md",
+        'label':        'Sub-Agent Templates (8 agents)',
     },
 ]
 
@@ -408,9 +415,11 @@ def download_file(token, fmt):
     return redirect(url)
 
 
-@payments_bp.route('/download/<token>/pro/<int:idx>')
-def download_pro_file(token, idx):
-    """Redirect to S3 pre-signed URL for a Pro Bundle PDF."""
+@payments_bp.route('/download/<token>/pro/<int:idx>/<fmt>')
+def download_pro_file(token, idx, fmt):
+    """Redirect to S3 pre-signed URL for a Pro Bundle file (pdf or md)."""
+    if fmt not in ('pdf', 'md'):
+        abort(400)
     purchase = Purchase.query.filter_by(download_token=token, status='confirmed').first()
     if not purchase:
         abort(404)
@@ -426,8 +435,8 @@ def download_pro_file(token, idx):
             'get_object',
             Params={
                 'Bucket': S3_BUCKET,
-                'Key': item['key'],
-                'ResponseContentDisposition': f'attachment; filename="{item["filename"]}"',
+                'Key': item[f'key_{fmt}'],
+                'ResponseContentDisposition': f'attachment; filename="{item[f"filename_{fmt}"]}"',
             },
             ExpiresIn=900,
         )
