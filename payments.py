@@ -19,25 +19,27 @@ S3_FILENAMES = {
 }
 
 # Pro Bundle — 4 bonus PDFs
+# 'key' is the exact S3 object key; 'filename' is the ASCII-safe download name
+# (S3 Content-Disposition header only accepts ISO-8859-1)
 PRO_BUNDLE_FILES = [
     {
         'key':      "ebooks/pro-bundle/Claude's Brain \u2014 Prompt Library.pdf",
-        'filename': "Claude's Brain \u2014 Prompt Library.pdf",
+        'filename': "Claudes-Brain-Prompt-Library.pdf",
         'label':    'Prompt Library (55+ prompts)',
     },
     {
         'key':      "ebooks/pro-bundle/Claude's Brain \u2014 CLAUDE.md Starter Kit.pdf",
-        'filename': "Claude's Brain \u2014 CLAUDE.md Starter Kit.pdf",
+        'filename': "Claudes-Brain-CLAUDE-md-Starter-Kit.pdf",
         'label':    'CLAUDE.md Starter Kit (7 templates)',
     },
     {
         'key':      "ebooks/pro-bundle/Claude's Brain \u2014 Slash Command Library.pdf",
-        'filename': "Claude's Brain \u2014 Slash Command Library.pdf",
+        'filename': "Claudes-Brain-Slash-Command-Library.pdf",
         'label':    'Slash Command Library (10 commands)',
     },
     {
         'key':      "ebooks/pro-bundle/Claude's Brain \u2014 Sub-Agent Templates.pdf",
-        'filename': "Claude's Brain \u2014 Sub-Agent Templates.pdf",
+        'filename': "Claudes-Brain-Sub-Agent-Templates.pdf",
         'label':    'Sub-Agent Templates (8 agents)',
     },
 ]
