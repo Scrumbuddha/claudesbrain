@@ -62,8 +62,13 @@ nav{position:sticky;top:0;z-index:100;padding:14px 32px;display:flex;align-items
 .layer-toggle:checked ~ .layer-body{max-height:500px}
 .layer-body-inner{padding:0 24px 22px 66px}
 .layer-desc{font-size:.92rem;color:var(--text);line-height:1.75;margin-bottom:16px}
-.pro-tip{background:color-mix(in srgb, var(--accent) 7%, transparent);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;padding:12px 16px;font-size:.85rem;color:var(--text);line-height:1.6}
+.pro-tip{background:color-mix(in srgb, var(--accent) 7%, transparent);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;padding:12px 16px;font-size:.85rem;color:var(--text);line-height:1.6;position:relative}
 .pro-tip strong{color:var(--accent);font-size:.72rem;letter-spacing:.07em;text-transform:uppercase;display:block;margin-bottom:4px}
+
+/* Copy button */
+.copy-btn{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:.7rem;color:var(--muted);cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;white-space:nowrap}
+.copy-btn:hover{background:rgba(255,255,255,.12);color:var(--white);border-color:var(--accent)}
+.copy-btn.copied{color:var(--accent);border-color:var(--accent)}
 
 /* PREV / NEXT NAV */
 .page-nav{display:flex;justify-content:space-between;align-items:center;max-width:1000px;margin:0 auto;padding:20px 32px 52px;position:relative;z-index:1;width:100%;flex-wrap:wrap;gap:12px}
@@ -132,6 +137,7 @@ footer{background:var(--black);border-top:1px solid var(--border);padding:22px 3
         <div class="pro-tip">
           <strong>⚡ Pro Tip</strong>
           {{ layer.pro_tip }}
+          <button class="copy-btn" onclick="copyText(this, {{ layer.pro_tip | tojson }})">Copy</button>
         </div>
       </div>
     </div>
@@ -178,6 +184,22 @@ footer{background:var(--black);border-top:1px solid var(--border);padding:22px 3
   <div class="footer-brand">Claude's Brain</div>
   <div class="footer-copy">Building Claude's Brain &mdash; St. Pete AI &copy; 2025</div>
 </footer>
+
+<script>
+function copyText(btn, text) {
+  navigator.clipboard.writeText(text).then(function() {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(function() {
+      btn.textContent = 'Copy';
+      btn.classList.remove('copied');
+    }, 2000);
+  }).catch(function() {
+    btn.textContent = 'Error';
+    setTimeout(function() { btn.textContent = 'Copy'; }, 2000);
+  });
+}
+</script>
 
 </body>
 </html>

@@ -1,6 +1,8 @@
 import math
+from datetime import datetime, timezone
+
 from flask import Blueprint, render_template, abort
-from models import Purchase
+from models import db, Purchase, SectionProgress, Changelog, Referral
 from sections import SECTIONS
 
 brain_app_bp = Blueprint('brain_app', __name__, url_prefix='/app')
@@ -30,11 +32,48 @@ def _get_purchase(token):
     return p
 
 
+def _track_progress(purchase, slug):
+    """Record a section visit if not already tracked."""
+    existing = SectionProgress.query.filter_by(
+        purchase_id=purchase.id, slug=slug
+    ).first()
+    if not existing:
+        sp = SectionProgress(purchase_id=purchase.id, slug=slug)
+        db.session.add(sp)
+        db.session.commit()
+
+
+def _visited_slugs(purchase):
+    """Return set of visited slugs for a purchase."""
+    rows = SectionProgress.query.filter_by(purchase_id=purchase.id).all()
+    return {r.slug for r in rows}
+
+
+def _changelog_badge(purchase):
+    """Return newest changelog entry if published after last visit, else None."""
+    latest = Changelog.query.order_by(Changelog.published_at.desc()).first()
+    if not latest:
+        return None
+    # Show badge if user hasn't visited any section since the last changelog entry
+    last_visit = SectionProgress.query.filter_by(purchase_id=purchase.id)\
+        .order_by(SectionProgress.visited_at.desc()).first()
+    if not last_visit:
+        return latest
+    pub = latest.published_at
+    if pub.tzinfo is None:
+        pub = pub.replace(tzinfo=timezone.utc)
+    vis = last_visit.visited_at
+    if vis.tzinfo is None:
+        vis = vis.replace(tzinfo=timezone.utc)
+    return latest if pub > vis else None
+
+
 @brain_app_bp.route('/demo')
 def hub_demo():
     return render_template('app/hub.html', token='demo', purchase=None,
                            sections=SECTIONS, petals=_petal_positions(),
-                           cx=CX, cy=CY)
+                           cx=CX, cy=CY, visited=set(), changelog_badge=None,
+                           progress_pct=0, referral_code=None)
 
 
 @brain_app_bp.route('/demo/section/<slug>')
@@ -62,9 +101,20 @@ def hub(token):
     purchase = _get_purchase(token)
     if not purchase:
         abort(404)
+    visited = _visited_slugs(purchase)
+    progress_pct = round(len(visited) / len(SECTIONS) * 100)
+    badge = _changelog_badge(purchase)
+    referral = Referral.query.filter_by(purchase_id=purchase.id).first()
+    if not referral:
+        referral = Referral(purchase_id=purchase.id)
+        db.session.add(referral)
+        db.session.commit()
     return render_template('app/hub.html', token=token, purchase=purchase,
                            sections=SECTIONS, petals=_petal_positions(),
-                           cx=CX, cy=CY)
+                           cx=CX, cy=CY, visited=visited,
+                           progress_pct=progress_pct,
+                           changelog_badge=badge,
+                           referral_code=referral.code)
 
 
 @brain_app_bp.route('/<token>/section/<slug>')
@@ -74,6 +124,8 @@ def section(token, slug):
         abort(404)
     if slug not in SECTION_MAP:
         abort(404)
+
+    _track_progress(purchase, slug)
 
     slugs = [s['slug'] for s in SECTIONS]
     idx = slugs.index(slug)

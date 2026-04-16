@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testimonials — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--black:#080810;--deep:#0e0e1a;--surface:#14141f;--card:#1a1a28;--border:#2a2a3d;--gold:#C9A227;--gold-lt:#e8c14a;--green:#27AE60;--red:#C0392B;--white:#FFFFFF;--text:#d4d4e8;--muted:#7a7a9a}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--black);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.6}
+.topbar{position:sticky;top:0;z-index:100;padding:16px 32px;display:flex;align-items:center;justify-content:space-between;background:rgba(8,8,16,.92);backdrop-filter:blur(16px);border-bottom:1px solid rgba(201,162,39,.12)}
+.topbar-brand{font-family:'Roboto',sans-serif;font-weight:900;font-size:1.3rem;letter-spacing:.08em;color:var(--gold);text-decoration:none}
+.topbar-right a{color:var(--muted);font-size:.85rem;text-decoration:none;transition:color .2s;margin-left:16px}
+.topbar-right a:hover{color:var(--gold)}
+.container{max-width:960px;margin:0 auto;padding:32px}
+.page-title{font-family:'Roboto',sans-serif;font-weight:900;font-size:1.8rem;color:var(--white);margin-bottom:24px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:24px;margin-bottom:24px}
+.card h2{font-family:'Roboto',sans-serif;font-weight:900;font-size:1.1rem;color:var(--white);margin-bottom:16px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.form-group{margin-bottom:12px}
+label{display:block;font-size:.78rem;font-weight:600;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+input,textarea{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-size:.92rem;color:var(--white);font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s}
+input:focus,textarea:focus{border-color:var(--gold)}
+textarea{min-height:90px;resize:vertical}
+.checkbox-row{display:flex;align-items:center;gap:8px;font-size:.9rem}
+.btn{display:inline-flex;align-items:center;gap:6px;border-radius:6px;padding:10px 20px;font-size:.85rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;border:1px solid;transition:all .2s}
+.btn-gold{background:rgba(201,162,39,.12);border-color:rgba(201,162,39,.4);color:var(--gold)}
+.btn-gold:hover{background:rgba(201,162,39,.22)}
+.btn-green{background:rgba(39,174,96,.1);border-color:rgba(39,174,96,.4);color:#4ecb71}
+.btn-green:hover{background:rgba(39,174,96,.2)}
+.btn-red{background:rgba(192,57,43,.1);border-color:rgba(192,57,43,.4);color:#e55}
+.btn-red:hover{background:rgba(192,57,43,.2)}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+th{padding:10px 14px;text-align:left;font-size:.72rem;font-weight:600;letter-spacing:.08em;color:var(--gold);text-transform:uppercase;border-bottom:1px solid var(--border)}
+td{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:top}
+tr:last-child td{border-bottom:none}
+.status-on{color:#4ecb71;font-weight:600;font-size:.8rem}
+.status-off{color:var(--muted);font-size:.8rem}
+.flash{padding:12px 18px;border-radius:6px;margin-bottom:16px;font-size:.9rem}
+.flash-success{background:rgba(39,174,96,.12);border:1px solid rgba(39,174,96,.3);color:#4ecb71}
+.flash-error{background:rgba(192,57,43,.12);border:1px solid rgba(192,57,43,.3);color:#e55}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="topbar-brand" href="/admin/">⚙ Admin</a>
+  <div class="topbar-right">
+    <a href="/admin/">Dashboard</a>
+    <a href="/admin/coupons">Coupons</a>
+    <a href="/admin/changelog">Changelog</a>
+    <a href="/admin/broadcast">Broadcast</a>
+    <a href="/admin/logout">Logout</a>
+  </div>
+</div>
+<div class="container">
+  <div class="page-title">Testimonials</div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in messages %}
+  <div class="flash flash-{{ cat }}">{{ msg }}</div>
+  {% endfor %}
+  {% endwith %}
+
+  <div class="card">
+    <h2>Add Testimonial</h2>
+    <form method="POST" action="/admin/testimonials/add">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" name="name" required placeholder="Jane Smith">
+        </div>
+        <div class="form-group">
+          <label>Role / Company (optional)</label>
+          <input type="text" name="role" placeholder="Senior Developer at Acme">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Quote</label>
+        <textarea name="body" required placeholder="This ebook completely changed how I work with Claude..."></textarea>
+      </div>
+      <div class="checkbox-row" style="margin-bottom:16px">
+        <input type="checkbox" name="approved" value="1" id="approved" checked>
+        <label for="approved" style="display:inline;text-transform:none;letter-spacing:0;font-size:.9rem;color:var(--text)">Approved (visible on landing page)</label>
+      </div>
+      <button type="submit" class="btn btn-gold">Add Testimonial</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>{{ testimonials|length }} Testimonial{{ 's' if testimonials|length != 1 }}</h2>
+    {% if testimonials %}
+    <table>
+      <thead>
+        <tr><th>Name</th><th>Role</th><th>Quote</th><th>Status</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for t in testimonials %}
+        <tr>
+          <td style="font-weight:600;color:var(--white)">{{ t.name }}</td>
+          <td style="color:var(--muted)">{{ t.role or '—' }}</td>
+          <td style="max-width:320px;white-space:normal">{{ t.body[:120] }}{% if t.body|length > 120 %}…{% endif %}</td>
+          <td>{% if t.approved %}<span class="status-on">✓ Live</span>{% else %}<span class="status-off">Hidden</span>{% endif %}</td>
+          <td>
+            <form method="POST" action="/admin/testimonials/{{ t.id }}/toggle" style="display:inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-green" style="padding:5px 10px;font-size:.75rem">{% if t.approved %}Hide{% else %}Approve{% endif %}</button>
+            </form>
+            <form method="POST" action="/admin/testimonials/{{ t.id }}/delete" style="display:inline;margin-left:6px" onsubmit="return confirm('Delete this testimonial?')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-red" style="padding:5px 10px;font-size:.75rem">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:var(--muted)">No testimonials yet.</p>
+    {% endif %}
+  </div>
+</div>
+</body>
+</html>

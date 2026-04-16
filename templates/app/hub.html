@@ -48,11 +48,32 @@ a.petal-group:hover .petal-label{fill:#e8c14a !important}
 /* Grid */
 .radial-hint{text-align:center;font-size:.78rem;color:var(--muted);margin-bottom:18px;position:relative;z-index:1}
 .section-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;max-width:880px;margin:0 auto;padding:0 24px 56px;position:relative;z-index:1}
-.section-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 18px;text-decoration:none;color:var(--text);display:flex;align-items:center;gap:12px;transition:all .2s}
+.section-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 18px;text-decoration:none;color:var(--text);display:flex;align-items:center;gap:12px;transition:all .2s;position:relative}
 .section-card:hover{border-color:var(--gold);background:rgba(201,162,39,.05);transform:translateY(-2px)}
+.section-card.visited{border-left:3px solid rgba(39,174,96,.5)}
 .section-card-icon{font-size:1.35rem;flex-shrink:0}
 .section-card-ch{font-size:.68rem;color:var(--muted);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
 .section-card-title{font-family:'Roboto',sans-serif;font-weight:900;font-size:1rem;letter-spacing:.04em;color:var(--white)}
+.visited-check{position:absolute;top:8px;right:8px;font-size:.7rem;color:#4ecb71;opacity:.8}
+/* Progress bar */
+.progress-wrap{max-width:880px;margin:0 auto;padding:0 24px 20px;position:relative;z-index:1}
+.progress-label{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-bottom:6px}
+.progress-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-lt));border-radius:2px;transition:width .6s ease}
+/* Changelog badge */
+.changelog-banner{max-width:880px;margin:0 auto;padding:0 24px 16px;position:relative;z-index:1}
+.changelog-card{background:rgba(201,162,39,.07);border:1px solid rgba(201,162,39,.25);border-radius:8px;padding:14px 18px;display:flex;align-items:center;gap:12px}
+.changelog-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.changelog-title{font-weight:600;font-size:.9rem;color:var(--white)}
+.changelog-sub{font-size:.78rem;color:var(--muted)}
+/* Referral bar */
+.referral-wrap{max-width:880px;margin:0 auto;padding:0 24px 16px;position:relative;z-index:1}
+.referral-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.referral-label{font-size:.78rem;color:var(--muted);flex-shrink:0}
+.referral-url{font-family:monospace;font-size:.82rem;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:6px 10px;flex:1;min-width:200px;word-break:break-all}
+.referral-copy{background:rgba(201,162,39,.12);border:1px solid rgba(201,162,39,.3);border-radius:4px;padding:6px 14px;font-size:.78rem;font-weight:600;color:var(--gold);cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;white-space:nowrap}
+.referral-copy:hover{background:rgba(201,162,39,.22)}
 footer{background:var(--black);border-top:1px solid var(--border);padding:24px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;position:relative;z-index:1;margin-top:auto}
 .footer-brand{font-family:'Roboto',sans-serif;font-weight:900;font-size:1.1rem;letter-spacing:.08em;color:var(--gold)}
 .footer-copy{font-size:.76rem;color:var(--muted)}
@@ -116,22 +137,65 @@ footer{background:var(--black);border-top:1px solid var(--border);padding:24px 3
 
 <p class="radial-hint">↑ Click any layer to explore &nbsp;·&nbsp; Hover to highlight</p>
 
+{% if purchase %}
+{% if changelog_badge %}
+<div class="changelog-banner">
+  <div class="changelog-card">
+    <div class="changelog-dot"></div>
+    <div>
+      <div class="changelog-title">What's New: {{ changelog_badge.title }}</div>
+      <div class="changelog-sub">{{ changelog_badge.published_at.strftime('%B %-d, %Y') if changelog_badge.published_at else '' }}</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="progress-wrap">
+  <div class="progress-label">
+    <span>Your Progress</span>
+    <span>{{ visited|length }} / {{ sections|length }} chapters &nbsp;·&nbsp; {{ progress_pct }}%</span>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" style="width:{{ progress_pct }}%"></div></div>
+</div>
+{% endif %}
+
 <div class="section-grid">
   {% for s in sections %}
-  <a class="section-card" href="/app/{{ token }}/section/{{ s.slug }}">
+  <a class="section-card {% if s.slug in visited %}visited{% endif %}" href="/app/{{ token }}/section/{{ s.slug }}">
     <span class="section-card-icon">{{ s.icon }}</span>
     <div>
       <div class="section-card-ch">Chapter {{ s.chapter }}</div>
       <div class="section-card-title">{{ s.title }}</div>
     </div>
+    {% if s.slug in visited %}<span class="visited-check">✓</span>{% endif %}
   </a>
   {% endfor %}
 </div>
+
+{% if purchase and referral_code %}
+<div class="referral-wrap">
+  <div class="referral-card">
+    <span class="referral-label">Share &amp; earn:</span>
+    <span class="referral-url" id="refUrl">https://www.claudesbrain.com/?ref={{ referral_code }}</span>
+    <button class="referral-copy" onclick="copyRef(this)">Copy Link</button>
+  </div>
+</div>
+{% endif %}
 
 <footer>
   <div class="footer-brand">Claude's Brain</div>
   <div class="footer-copy">Building Claude's Brain &mdash; St. Pete AI &copy; 2025</div>
 </footer>
+
+<script>
+function copyRef(btn) {
+  var url = document.getElementById('refUrl').textContent;
+  navigator.clipboard.writeText(url).then(function() {
+    btn.textContent = 'Copied!';
+    setTimeout(function() { btn.textContent = 'Copy Link'; }, 2000);
+  });
+}
+</script>
 
 </body>
 </html>

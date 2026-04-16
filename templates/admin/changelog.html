@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Changelog — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--black:#080810;--surface:#14141f;--card:#1a1a28;--border:#2a2a3d;--gold:#C9A227;--red:#C0392B;--white:#FFFFFF;--text:#d4d4e8;--muted:#7a7a9a}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--black);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.6}
+.topbar{position:sticky;top:0;z-index:100;padding:16px 32px;display:flex;align-items:center;justify-content:space-between;background:rgba(8,8,16,.92);backdrop-filter:blur(16px);border-bottom:1px solid rgba(201,162,39,.12)}
+.topbar-brand{font-family:'Roboto',sans-serif;font-weight:900;font-size:1.3rem;letter-spacing:.08em;color:var(--gold);text-decoration:none}
+.topbar-right a{color:var(--muted);font-size:.85rem;text-decoration:none;margin-left:16px}
+.topbar-right a:hover{color:var(--gold)}
+.container{max-width:800px;margin:0 auto;padding:32px}
+.page-title{font-family:'Roboto',sans-serif;font-weight:900;font-size:1.8rem;color:var(--white);margin-bottom:24px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:24px;margin-bottom:24px}
+.card h2{font-family:'Roboto',sans-serif;font-weight:900;font-size:1.1rem;color:var(--white);margin-bottom:16px}
+.form-group{margin-bottom:12px}
+label{display:block;font-size:.78rem;font-weight:600;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+input,textarea{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-size:.92rem;color:var(--white);font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s}
+input:focus,textarea:focus{border-color:var(--gold)}
+textarea{min-height:120px;resize:vertical}
+.btn{display:inline-flex;align-items:center;gap:6px;border-radius:6px;padding:10px 20px;font-size:.85rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;border:1px solid;transition:all .2s}
+.btn-gold{background:rgba(201,162,39,.12);border-color:rgba(201,162,39,.4);color:var(--gold)}
+.btn-gold:hover{background:rgba(201,162,39,.22)}
+.btn-red{background:rgba(192,57,43,.1);border-color:rgba(192,57,43,.4);color:#e55}
+.btn-red:hover{background:rgba(192,57,43,.2)}
+.entry{border-bottom:1px solid var(--border);padding:18px 0}
+.entry:last-child{border-bottom:none}
+.entry-date{font-size:.75rem;color:var(--muted);margin-bottom:4px}
+.entry-title{font-weight:700;color:var(--white);font-size:1rem;margin-bottom:6px}
+.entry-body{font-size:.88rem;color:var(--text);white-space:pre-wrap;line-height:1.6}
+.flash{padding:12px 18px;border-radius:6px;margin-bottom:16px;font-size:.9rem}
+.flash-success{background:rgba(39,174,96,.12);border:1px solid rgba(39,174,96,.3);color:#4ecb71}
+.flash-error{background:rgba(192,57,43,.12);border:1px solid rgba(192,57,43,.3);color:#e55}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="topbar-brand" href="/admin/">⚙ Admin</a>
+  <div class="topbar-right">
+    <a href="/admin/">Dashboard</a>
+    <a href="/admin/testimonials">Testimonials</a>
+    <a href="/admin/coupons">Coupons</a>
+    <a href="/admin/broadcast">Broadcast</a>
+    <a href="/admin/logout">Logout</a>
+  </div>
+</div>
+<div class="container">
+  <div class="page-title">Changelog</div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in messages %}
+  <div class="flash flash-{{ cat }}">{{ msg }}</div>
+  {% endfor %}
+  {% endwith %}
+
+  <div class="card">
+    <h2>Publish Update</h2>
+    <form method="POST" action="/admin/changelog/add">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-group">
+        <label>Title</label>
+        <input type="text" name="title" required placeholder="April 2026 content update — Routines, /recap, Custom Agents">
+      </div>
+      <div class="form-group">
+        <label>Body (shown to users)</label>
+        <textarea name="body" required placeholder="We've added three new sub-capabilities..."></textarea>
+      </div>
+      <button type="submit" class="btn btn-gold">Publish</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>{{ entries|length }} Entr{{ 'ies' if entries|length != 1 else 'y' }}</h2>
+    {% if entries %}
+      {% for e in entries %}
+      <div class="entry">
+        <div class="entry-date">{{ e.published_at.strftime('%B %-d, %Y at %-I:%M %p') if e.published_at else '' }}</div>
+        <div class="entry-title">{{ e.title }}</div>
+        <div class="entry-body">{{ e.body }}</div>
+        <form method="POST" action="/admin/changelog/{{ e.id }}/delete" style="margin-top:10px" onsubmit="return confirm('Delete this entry?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-red" style="padding:5px 12px;font-size:.75rem">Delete</button>
+        </form>
+      </div>
+      {% endfor %}
+    {% else %}
+    <p style="color:var(--muted)">No entries yet.</p>
+    {% endif %}
+  </div>
+</div>
+</body>
+</html>

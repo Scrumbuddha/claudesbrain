@@ -54,11 +54,31 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .btn-grant:hover{background:rgba(39,174,96,.2)}
 .btn-revoke{background:rgba(192,57,43,.1);border-color:rgba(192,57,43,.4);color:#e55}
 .btn-revoke:hover{background:rgba(192,57,43,.2)}
+.btn-delete{background:rgba(120,20,10,.15);border-color:rgba(192,57,43,.6);color:#ff6b6b}
+.btn-delete:hover{background:rgba(192,57,43,.35)}
 .status-revoked{color:var(--muted);font-weight:600;font-size:.8rem;text-transform:uppercase;letter-spacing:.04em}
 .flash-messages{margin-bottom:20px}
 .flash{padding:12px 16px;border-radius:6px;font-size:.88rem;margin-bottom:8px}
 .flash-success{background:rgba(39,174,96,.1);border:1px solid rgba(39,174,96,.3);color:#4ecb71}
 .flash-error{background:rgba(192,57,43,.1);border:1px solid rgba(192,57,43,.3);color:#e55}
+.date-filter{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:20px;padding:14px 18px;background:var(--card);border:1px solid var(--border);border-radius:8px}
+.date-filter label{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+.date-filter input[type=date]{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:4px;padding:7px 10px;color:var(--white);font-size:.85rem;outline:none;font-family:inherit;color-scheme:dark}
+.date-filter input[type=date]:focus{border-color:var(--gold)}
+.btn-filter{background:rgba(201,162,39,.12);border:1px solid var(--gold-dim);border-radius:4px;padding:7px 16px;color:var(--gold);font-size:.83rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s}
+.btn-filter:hover{background:rgba(201,162,39,.22)}
+.btn-filter-clear{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:4px;padding:7px 14px;color:var(--muted);font-size:.83rem;font-weight:600;text-decoration:none;transition:all .2s}
+.btn-filter-clear:hover{color:var(--white)}
+.filter-active-badge{font-size:.75rem;color:var(--gold);background:rgba(201,162,39,.12);border:1px solid var(--gold-dim);border-radius:4px;padding:3px 10px;white-space:nowrap}
+.bulk-bar{display:none;align-items:center;gap:12px;padding:10px 16px;background:rgba(201,162,39,.08);border:1px solid rgba(201,162,39,.25);border-radius:6px;margin-bottom:12px;flex-wrap:wrap}
+.bulk-bar.active{display:flex}
+.bulk-bar-count{font-size:.85rem;color:var(--gold);font-weight:600;flex:1}
+.btn-bulk{display:inline-flex;align-items:center;gap:6px;border-radius:4px;padding:7px 14px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid;transition:all .2s}
+.btn-bulk-revoke{background:rgba(192,57,43,.1);border-color:rgba(192,57,43,.4);color:#e55}
+.btn-bulk-revoke:hover{background:rgba(192,57,43,.2)}
+.btn-bulk-delete{background:rgba(120,20,10,.15);border-color:rgba(192,57,43,.6);color:#ff6b6b}
+.btn-bulk-delete:hover{background:rgba(192,57,43,.35)}
+input[type=checkbox]{accent-color:var(--gold);width:15px;height:15px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -67,6 +87,11 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <a class="topbar-brand" href="{{ url_for('admin.dashboard') }}">Claude's Brain &middot; Admin</a>
   <div class="topbar-right">
     <a href="/">View Site</a>
+    <a href="/admin/testimonials">Testimonials</a>
+    <a href="/admin/coupons">Coupons</a>
+    <a href="/admin/changelog">Changelog</a>
+    <a href="/admin/broadcast">Broadcast</a>
+    <a href="/admin/referrals">Referrals</a>
     <a href="{{ url_for('admin.logout') }}">Logout</a>
   </div>
 </div>
@@ -127,9 +152,35 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">Amount</label>
         <input type="text" name="amount" value="6.99" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:4px;padding:8px 12px;color:var(--white);font-size:.9rem;width:80px;outline:none">
       </div>
-      <button type="submit" style="background:var(--green);color:#fff;border:none;border-radius:4px;padding:9px 18px;font-weight:600;font-size:.88rem;cursor:pointer">+ Create &amp; Get Link</button>
+      <button type="submit" style="background:var(--green);color:#fff;border:none;border-radius:4px;padding:9px 18px;font-weight:600;font-size:.88rem;cursor:pointer">+ Create &amp; Send Email</button>
     </form>
   </div>
+
+  <!-- Test Email -->
+  <div class="file-mgmt" style="margin-top:16px">
+    <div class="file-mgmt-title">Test Email (SMTP)</div>
+    <form method="post" action="{{ url_for('admin.test_email') }}" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:12px">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div>
+        <label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">Send to</label>
+        <input type="email" name="email" placeholder="{{ current_user.email }}" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:4px;padding:8px 12px;color:var(--white);font-size:.9rem;width:260px;outline:none">
+      </div>
+      <button type="submit" style="background:var(--gold);color:#080810;border:none;border-radius:4px;padding:9px 18px;font-weight:700;font-size:.88rem;cursor:pointer">Send Test Email</button>
+    </form>
+  </div>
+
+  <!-- Date Filter -->
+  <form class="date-filter" method="get" action="{{ url_for('admin.dashboard') }}">
+    <label>From</label>
+    <input type="date" name="date_from" value="{{ date_from }}">
+    <label>To</label>
+    <input type="date" name="date_to" value="{{ date_to }}">
+    <button type="submit" class="btn-filter">Filter</button>
+    <a class="btn-filter-clear" href="{{ url_for('admin.dashboard') }}">Show All</a>
+    {% if date_from or date_to %}
+    <span class="filter-active-badge">&#9679; Filtered &mdash; {{ purchases|length }} record{{ 's' if purchases|length != 1 }}</span>
+    {% endif %}
+  </form>
 
   <div class="stats-grid">
     <div class="stat-card">
@@ -148,14 +199,27 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
   <div class="actions-bar">
     <div style="font-size:.88rem;color:var(--muted)">{{ purchases|length }} record{{ 's' if purchases|length != 1 }}</div>
-    <a class="btn-export" href="{{ url_for('admin.export_csv') }}">&#128190; Export CSV</a>
+    <a class="btn-export" href="{{ url_for('admin.export_csv', date_from=date_from, date_to=date_to) }}">&#128190; Export CSV</a>
   </div>
+
+  <!-- Bulk Actions Form -->
+  <form id="bulk-form" method="post" action="{{ url_for('admin.bulk_action') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" id="bulk-action-input" value="">
+
+    <div class="bulk-bar" id="bulk-bar">
+      <span class="bulk-bar-count" id="bulk-count">0 selected</span>
+      <button type="button" class="btn-bulk btn-bulk-revoke" onclick="submitBulk('revoke', 'Revoke access for selected members?')">Revoke Selected</button>
+      <button type="button" class="btn-bulk btn-bulk-delete" onclick="submitBulk('delete', 'Permanently delete selected records? This cannot be undone.')">Delete Selected</button>
+      <button type="button" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.85rem;padding:4px 8px" onclick="clearSelection()">Clear</button>
+    </div>
 
   <div class="table-wrap">
     {% if purchases %}
     <table>
       <thead>
         <tr>
+          <th style="width:36px"><input type="checkbox" id="select-all" title="Select all"></th>
           <th>Date</th>
           <th>Email</th>
           <th>Name</th>
@@ -170,6 +234,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <tbody>
         {% for p in purchases %}
         <tr>
+          <td><input type="checkbox" name="selected_ids" value="{{ p.id }}" class="row-check"></td>
           <td>{{ p.created_at.strftime('%Y-%m-%d %H:%M') if p.created_at else '—' }}</td>
           <td>{{ p.email }}</td>
           <td>{{ p.name or '—' }}</td>
@@ -189,6 +254,10 @@ tr:hover td{background:rgba(255,255,255,.02)}
               <button class="btn-action btn-revoke" title="Revoke access">Revoke</button>
             </form>
             {% endif %}
+            <form method="post" action="{{ url_for('admin.delete_purchase', purchase_id=p.id) }}" style="display:inline" onsubmit="return confirm('Permanently delete record for {{ p.email }}? This cannot be undone.')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn-action btn-delete" title="Delete record">Delete</button>
+            </form>
           </td>
         </tr>
         {% endfor %}
@@ -201,6 +270,44 @@ tr:hover td{background:rgba(255,255,255,.02)}
     </div>
     {% endif %}
   </div>
+  </form>
+
+<script>
+const selectAll = document.getElementById('select-all');
+const bulkBar = document.getElementById('bulk-bar');
+const bulkCount = document.getElementById('bulk-count');
+
+function getChecked() {
+  return document.querySelectorAll('.row-check:checked');
+}
+
+function updateBulkBar() {
+  const n = getChecked().length;
+  bulkCount.textContent = n + ' selected';
+  bulkBar.classList.toggle('active', n > 0);
+  selectAll.indeterminate = n > 0 && n < document.querySelectorAll('.row-check').length;
+  selectAll.checked = n > 0 && n === document.querySelectorAll('.row-check').length;
+}
+
+selectAll.addEventListener('change', function() {
+  document.querySelectorAll('.row-check').forEach(cb => cb.checked = this.checked);
+  updateBulkBar();
+});
+
+document.querySelectorAll('.row-check').forEach(cb => cb.addEventListener('change', updateBulkBar));
+
+function clearSelection() {
+  document.querySelectorAll('.row-check').forEach(cb => cb.checked = false);
+  selectAll.checked = false;
+  updateBulkBar();
+}
+
+function submitBulk(action, msg) {
+  if (!confirm(msg)) return;
+  document.getElementById('bulk-action-input').value = action;
+  document.getElementById('bulk-form').submit();
+}
+</script>
 </div>
 
 </body>

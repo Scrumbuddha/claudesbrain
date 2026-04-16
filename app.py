@@ -4,8 +4,9 @@ from flask import Flask, render_template, Response
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_wtf.csrf import CSRFProtect
+from werkzeug.middleware.proxy_fix import ProxyFix
 
-from models import db, AdminUser
+from models import db, AdminUser, Testimonial, EmailCapture
 
 mail = Mail()
 login_manager = LoginManager()
@@ -14,6 +15,7 @@ csrf = CSRFProtect()
 
 def create_app():
     app = Flask(__name__)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     # --- Config ---
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-change-in-production')
@@ -51,10 +53,71 @@ def create_app():
     app.register_blueprint(admin_bp)
     app.register_blueprint(brain_app_bp)
 
+    # Exempt AJAX endpoints from CSRF (JS fetch from landing page)
+    csrf.exempt('app.capture_email')
+    csrf.exempt('payments.validate_coupon')
+
     # --- Routes ---
     @app.route('/')
     def index():
-        return render_template('index.html')
+        testimonials = Testimonial.query.filter_by(approved=True).order_by(Testimonial.created_at.desc()).limit(4).all()
+        return render_template('index.html',
+                               paypal_client_id=os.environ.get('PAYPAL_CLIENT_ID', ''),
+                               testimonials=testimonials)
+
+    @app.route('/capture-email', methods=['POST'])
+    def capture_email():
+        from flask import request, jsonify
+        data = request.get_json()
+        email = (data.get('email', '') if data else '').strip().lower()
+        if not email or '@' not in email:
+            return jsonify({'error': 'Invalid email'}), 400
+        existing = EmailCapture.query.filter_by(email=email).first()
+        if not existing:
+            capture = EmailCapture(email=email, source='landing')
+            db.session.add(capture)
+            db.session.commit()
+            try:
+                _send_free_chapter_email(email)
+                capture.free_chapter_sent = True
+                db.session.commit()
+            except Exception as e:
+                app.logger.error(f'Free chapter email failed: {e}')
+        return jsonify({'ok': True})
+
+    def _send_free_chapter_email(email):
+        from flask_mail import Message
+        import boto3
+        S3_BUCKET = os.environ.get('EBOOK_S3_BUCKET', '')
+        s3 = boto3.client('s3', region_name='us-east-1')
+        url = s3.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': S3_BUCKET, 'Key': 'ebooks/chapter1-free.pdf',
+                    'ResponseContentDisposition': 'attachment; filename="claude-brain-chapter1.pdf"'},
+            ExpiresIn=604800  # 7 days
+        )
+        msg = Message(
+            subject="Your free chapter: Building Claude's Brain — Chapter 1",
+            sender=app.config.get('MAIL_DEFAULT_SENDER', 'noreply@claudesbrain.com'),
+            recipients=[email],
+        )
+        msg.html = f"""
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#080810;color:#d4d4e8;padding:40px;border-radius:8px">
+            <h1 style="color:#C9A227;font-size:24px;margin-bottom:8px">Chapter 1 is yours.</h1>
+            <p style="color:#7a7a9a;margin-bottom:24px">Here's your free preview of <strong style="color:#fff">Building Claude's Brain</strong> — Chapter 1: CLAUDE.md.</p>
+            <div style="margin:28px 0;text-align:center">
+                <a href="{url}" style="display:inline-block;background:#C9A227;color:#080810;font-weight:700;padding:14px 28px;border-radius:6px;text-decoration:none;font-size:15px">Download Chapter 1 (PDF)</a>
+            </div>
+            <p style="color:#7a7a9a;font-size:13px">Link expires in 7 days. If you'd like the full ebook, visit <a href="https://www.claudesbrain.com" style="color:#C9A227">claudesbrain.com</a>.</p>
+            <hr style="border:none;border-top:1px solid #2a2a3d;margin:24px 0">
+            <p style="color:#7a7a9a;font-size:12px">St. Pete AI &middot; stpeteai.org</p>
+        </div>
+        """
+        mail.send(msg)
+
+    @app.route('/stpeteai')
+    def stpeteai():
+        return render_template('stpeteai_index.html')
 
     @app.route('/terms')
     def terms():

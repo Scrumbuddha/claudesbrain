@@ -6,7 +6,7 @@ from botocore.exceptions import ClientError
 from flask import Blueprint, request, redirect, url_for, render_template, abort, current_app, jsonify
 from flask_mail import Message
 
-from models import db, Purchase
+from models import db, Purchase, Coupon, Referral
 
 S3_BUCKET = os.environ.get('EBOOK_S3_BUCKET', '')
 S3_KEYS = {
@@ -54,6 +54,37 @@ payments_bp = Blueprint('payments', __name__)
 
 PAYPAL_VERIFY_URL = 'https://ipnpb.paypal.com/cgi-bin/webscr'
 PAYPAL_SANDBOX_VERIFY_URL = 'https://ipnpb.sandbox.paypal.com/cgi-bin/webscr'
+
+PRODUCT_PRICES = {
+    'standard': 6.99,
+    'pro': 14.99,
+}
+
+
+@payments_bp.route('/validate-coupon', methods=['POST'])
+def validate_coupon():
+    data = request.get_json()
+    code = (data.get('code', '') if data else '').strip().upper()
+    tier = (data.get('tier', 'standard') if data else 'standard')
+    if not code:
+        return jsonify({'error': 'No code provided'}), 400
+    coupon = Coupon.query.filter_by(code=code).first()
+    if not coupon:
+        return jsonify({'valid': False, 'message': 'Coupon not found.'})
+    valid, msg = coupon.is_valid()
+    if not valid:
+        return jsonify({'valid': False, 'message': msg})
+    base_price = PRODUCT_PRICES.get(tier, PRODUCT_PRICES['standard'])
+    discounted = coupon.apply(base_price)
+    savings = round(base_price - discounted, 2)
+    return jsonify({
+        'valid': True,
+        'code': coupon.code,
+        'original': base_price,
+        'discounted': discounted,
+        'savings': savings,
+        'message': f'Coupon applied — save ${savings:.2f}!'
+    })
 
 
 @payments_bp.route('/ipn', methods=['POST'])
@@ -131,6 +162,24 @@ def ipn():
 @payments_bp.route('/create-order', methods=['POST'])
 def create_order():
     """Create a PayPal order — called by Smart Buttons JS."""
+    data = request.get_json() or {}
+    tier = data.get('tier', 'standard')
+    coupon_code = data.get('coupon', '').strip().upper()
+    referral_code = data.get('referral', '').strip().upper()
+
+    base_price = PRODUCT_PRICES.get(tier, PRODUCT_PRICES['standard'])
+    final_price = base_price
+    coupon = None
+
+    if coupon_code:
+        coupon = Coupon.query.filter_by(code=coupon_code).first()
+        if coupon:
+            valid, _ = coupon.is_valid()
+            if valid:
+                final_price = coupon.apply(base_price)
+
+    description = "Building Claude's Brain — Pro Bundle (PDF + DOCX + Prompt Library)" if tier == 'pro' else "Building Claude's Brain (PDF + DOCX)"
+
     try:
         token = _paypal_token()
         resp = requests.post(
@@ -139,14 +188,15 @@ def create_order():
             json={
                 'intent': 'CAPTURE',
                 'purchase_units': [{
-                    'amount': {'currency_code': 'USD', 'value': '6.99'},
-                    'description': "Building Claude's Brain (PDF + DOCX)",
+                    'amount': {'currency_code': 'USD', 'value': f'{final_price:.2f}'},
+                    'description': description,
+                    'custom_id': f'{tier}|{coupon_code}|{referral_code}',
                 }],
             },
             timeout=15,
         )
         resp.raise_for_status()
-        return jsonify({'id': resp.json()['id']})
+        return jsonify({'id': resp.json()['id'], 'price': final_price})
     except Exception as e:
         current_app.logger.error(f'create-order error: {e}')
         return jsonify({'error': str(e)}), 500
@@ -166,8 +216,8 @@ def _get_order(token, order_id):
 @payments_bp.route('/capture-order', methods=['POST'])
 def capture_order():
     """Capture a PayPal order after customer approves — creates Purchase and sends email."""
-    data = request.get_json()
-    order_id = data.get('orderID') if data else None
+    data = request.get_json() or {}
+    order_id = data.get('orderID')
     if not order_id:
         return jsonify({'error': 'Missing orderID'}), 400
     try:
@@ -204,6 +254,16 @@ def capture_order():
     name = payer.get('name', {})
     payer_name = f"{name.get('given_name', '')} {name.get('surname', '')}".strip()
 
+    # Parse custom_id for tier/coupon/referral
+    custom_id = order['purchase_units'][0].get('custom_id', '') or ''
+    parts = custom_id.split('|')
+    tier = parts[0] if len(parts) > 0 else 'standard'
+    coupon_code = parts[1] if len(parts) > 1 else ''
+    referral_code = parts[2] if len(parts) > 2 else ''
+
+    coupon = Coupon.query.filter_by(code=coupon_code).first() if coupon_code else None
+    coupon_id = coupon.id if coupon else None
+
     # Deduplicate
     existing = Purchase.query.filter_by(paypal_txn_id=txn_id).first()
     if existing:
@@ -216,9 +276,24 @@ def capture_order():
         amount=amount,
         currency=currency,
         status='confirmed',
+        tier=tier if tier in ('standard', 'pro') else 'standard',
+        coupon_id=coupon_id,
+        referral_code_used=referral_code or None,
         download_token=uuid.uuid4().hex,
     )
     db.session.add(purchase)
+    db.session.flush()  # get purchase.id before commit
+
+    # Increment coupon use count
+    if coupon:
+        coupon.use_count += 1
+
+    # Credit referral
+    if referral_code:
+        ref = Referral.query.filter_by(code=referral_code).first()
+        if ref:
+            ref.conversions += 1
+
     db.session.commit()
 
     try:
