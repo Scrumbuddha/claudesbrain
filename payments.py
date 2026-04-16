@@ -18,6 +18,30 @@ S3_FILENAMES = {
     'docx': 'building-claudes-brain.docx',
 }
 
+# Pro Bundle — 4 bonus PDFs
+PRO_BUNDLE_FILES = [
+    {
+        'key':      "ebooks/pro-bundle/Claude's Brain \u2014 Prompt Library.pdf",
+        'filename': "Claude's Brain \u2014 Prompt Library.pdf",
+        'label':    'Prompt Library (55+ prompts)',
+    },
+    {
+        'key':      "ebooks/pro-bundle/Claude's Brain \u2014 CLAUDE.md Starter Kit.pdf",
+        'filename': "Claude's Brain \u2014 CLAUDE.md Starter Kit.pdf",
+        'label':    'CLAUDE.md Starter Kit (7 templates)',
+    },
+    {
+        'key':      "ebooks/pro-bundle/Claude's Brain \u2014 Slash Command Library.pdf",
+        'filename': "Claude's Brain \u2014 Slash Command Library.pdf",
+        'label':    'Slash Command Library (10 commands)',
+    },
+    {
+        'key':      "ebooks/pro-bundle/Claude's Brain \u2014 Sub-Agent Templates.pdf",
+        'filename': "Claude's Brain \u2014 Sub-Agent Templates.pdf",
+        'label':    'Sub-Agent Templates (8 agents)',
+    },
+]
+
 PAYPAL_CLIENT_ID = os.environ.get('PAYPAL_CLIENT_ID', '')
 PAYPAL_SECRET = os.environ.get('PAYPAL_SECRET', '')
 PAYPAL_RECEIVER_EMAIL = os.environ.get('PAYPAL_RECEIVER_EMAIL', 'mark@scrumbuddhism.com')
@@ -378,5 +402,34 @@ def download_file(token, fmt):
 
     purchase.download_count += 1
     db.session.commit()
+
+    return redirect(url)
+
+
+@payments_bp.route('/download/<token>/pro/<int:idx>')
+def download_pro_file(token, idx):
+    """Redirect to S3 pre-signed URL for a Pro Bundle PDF."""
+    purchase = Purchase.query.filter_by(download_token=token, status='confirmed').first()
+    if not purchase:
+        abort(404)
+    if purchase.tier != 'pro':
+        abort(403)
+    if idx < 0 or idx >= len(PRO_BUNDLE_FILES):
+        abort(400)
+
+    item = PRO_BUNDLE_FILES[idx]
+    s3 = boto3.client('s3', region_name='us-east-1')
+    try:
+        url = s3.generate_presigned_url(
+            'get_object',
+            Params={
+                'Bucket': S3_BUCKET,
+                'Key': item['key'],
+                'ResponseContentDisposition': f'attachment; filename="{item["filename"]}"',
+            },
+            ExpiresIn=900,
+        )
+    except ClientError:
+        abort(500)
 
     return redirect(url)

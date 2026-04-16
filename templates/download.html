@@ -56,7 +56,21 @@ footer{background:var(--black);border-top:1px solid var(--border);padding:40px 3
       <a class="dl-btn dl-btn-docx" href="{{ url_for('payments.download_file', token=purchase.download_token, fmt='docx') }}">&#128221; Download DOCX</a>
     </div>
     <p class="dl-count">Downloads used: {{ purchase.download_count }} / {{ purchase.max_downloads }}</p>
-    <p class="dl-note">Questions? <a href="mailto:mark@scrumbuddhism.com">mark@scrumbuddhism.com</a></p>
+
+    {% if purchase.tier == 'pro' %}
+    <div style="margin-top:48px;text-align:left;background:#14141f;border:1px solid #2a2a3d;border-radius:10px;padding:32px">
+      <h2 style="font-family:'Roboto',sans-serif;font-weight:900;font-size:1.3rem;color:#C9A227;letter-spacing:.06em;margin-bottom:6px">&#127381; Pro Bundle Bonus Files</h2>
+      <p style="font-size:.85rem;color:#7a7a9a;margin-bottom:24px">Your Pro tier includes 4 additional PDF resources.</p>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <a class="dl-btn dl-btn-pdf" style="justify-content:flex-start" href="{{ url_for('payments.download_pro_file', token=purchase.download_token, idx=0) }}">&#128196; Prompt Library — 55+ ready-to-use prompts</a>
+        <a class="dl-btn dl-btn-pdf" style="justify-content:flex-start" href="{{ url_for('payments.download_pro_file', token=purchase.download_token, idx=1) }}">&#128196; CLAUDE.md Starter Kit — 7 templates</a>
+        <a class="dl-btn dl-btn-pdf" style="justify-content:flex-start" href="{{ url_for('payments.download_pro_file', token=purchase.download_token, idx=2) }}">&#128196; Slash Command Library — 10 commands</a>
+        <a class="dl-btn dl-btn-pdf" style="justify-content:flex-start" href="{{ url_for('payments.download_pro_file', token=purchase.download_token, idx=3) }}">&#128196; Sub-Agent Templates — 8 agents</a>
+      </div>
+    </div>
+    {% endif %}
+
+    <p class="dl-note" style="margin-top:24px">Questions? <a href="mailto:mark@scrumbuddhism.com">mark@scrumbuddhism.com</a></p>
     {% endif %}
   </div>
 </section>
