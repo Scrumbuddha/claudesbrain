@@ -28,4 +28,24 @@ with app.app_context():
     # create_all creates any missing tables (new models)
     db.create_all()
     print('All new tables created.')
+
+    # Seed launch coupon if it doesn't exist
+    from models import Coupon
+    from datetime import datetime, timedelta, timezone
+    if not Coupon.query.filter_by(code='PROBUNDLE30').first():
+        c = Coupon(
+            code='PROBUNDLE30',
+            discount_type='percent',
+            discount_value=30,
+            max_uses=100,
+            use_count=0,
+            active=True,
+            expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+        )
+        db.session.add(c)
+        db.session.commit()
+        print('Coupon PROBUNDLE30 created (30% off, 100 uses, 7 days).')
+    else:
+        print('Coupon PROBUNDLE30 already exists.')
+
     print('Migration complete.')
