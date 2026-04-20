@@ -251,6 +251,10 @@ def capture_order():
     """Capture a PayPal order after customer approves — creates Purchase and sends email."""
     data = request.get_json() or {}
     order_id = data.get('orderID')
+    # Frontend passes tier/coupon/referral directly as a reliable fallback
+    client_tier = data.get('tier', '').strip()
+    client_coupon = data.get('coupon', '').strip().upper()
+    client_referral = data.get('referral', '').strip().upper()
     if not order_id:
         return jsonify({'error': 'Missing orderID'}), 400
     try:
@@ -290,9 +294,20 @@ def capture_order():
     # Parse custom_id for tier/coupon/referral
     custom_id = order['purchase_units'][0].get('custom_id', '') or ''
     parts = custom_id.split('|')
-    tier = parts[0] if len(parts) > 0 else 'standard'
-    coupon_code = parts[1] if len(parts) > 1 else ''
-    referral_code = parts[2] if len(parts) > 2 else ''
+    tier_from_custom = parts[0] if len(parts) > 0 else ''
+    coupon_from_custom = parts[1] if len(parts) > 1 else ''
+    referral_from_custom = parts[2] if len(parts) > 2 else ''
+
+    # Prefer client-supplied values (always present); fall back to custom_id
+    tier = (client_tier if client_tier in ('standard', 'pro') else None) \
+           or (tier_from_custom if tier_from_custom in ('standard', 'pro') else 'standard')
+    coupon_code = client_coupon or coupon_from_custom
+    referral_code = client_referral or referral_from_custom
+
+    current_app.logger.info(
+        f'capture-order: order={order_id} tier={tier} coupon={coupon_code} '
+        f'referral={referral_code} custom_id={custom_id!r} amount={amount}'
+    )
 
     coupon = Coupon.query.filter_by(code=coupon_code).first() if coupon_code else None
     coupon_id = coupon.id if coupon else None
@@ -342,9 +357,17 @@ def _send_receipt_email(purchase):
     from app import mail
 
     download_url = url_for('payments.download_page', token=purchase.download_token, _external=True)
+    is_pro = getattr(purchase, 'tier', 'standard') == 'pro'
+
+    pro_note = """
+        <div style="background:#1a1a10;border:1px solid #C9A227;border-radius:6px;padding:16px 20px;margin:20px 0">
+          <div style="color:#C9A227;font-weight:700;font-size:14px;margin-bottom:6px">&#127381; Pro Bundle included</div>
+          <div style="color:#d4d4e8;font-size:13px">Your download page includes 4 bonus files — Prompt Library, CLAUDE.md Starter Kit, Slash Command Library, and Sub-Agent Templates — each in Markdown and PDF.</div>
+        </div>
+    """ if is_pro else ''
 
     msg = Message(
-        subject="Your copy of Building Claude's Brain",
+        subject="Your copy of Building Claude's Brain" + (" — Pro Bundle" if is_pro else ""),
         sender=current_app.config.get('MAIL_DEFAULT_SENDER', 'noreply@claudesbrain.com'),
         recipients=[purchase.email],
     )
@@ -352,6 +375,7 @@ def _send_receipt_email(purchase):
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#080810;color:#d4d4e8;padding:40px;border-radius:8px">
         <h1 style="color:#C9A227;font-size:28px;margin-bottom:8px">Thank you for your purchase!</h1>
         <p style="color:#7a7a9a;font-size:16px;margin-bottom:24px">Your copy of <strong style="color:#fff">Building Claude's Brain</strong> is ready to download.</p>
+        {pro_note}
         <p style="margin-bottom:8px"><strong>Name:</strong> {purchase.name}</p>
         <p style="margin-bottom:8px"><strong>Amount:</strong> ${purchase.amount:.2f} {purchase.currency}</p>
         <p style="margin-bottom:8px"><strong>Transaction:</strong> {purchase.paypal_txn_id}</p>

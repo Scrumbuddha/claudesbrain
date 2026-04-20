@@ -512,29 +512,29 @@ function applyCoupon() {
   var code = document.getElementById('couponInput').value.trim().toUpperCase();
   var msg = document.getElementById('couponMsg');
   if (!code) return;
-  fetch('/validate-coupon', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({code: code, tier: 'standard'})
-  }).then(function(r){return r.json();}).then(function(d) {
-    if (d.valid) {
+
+  // Validate against both tiers in parallel
+  Promise.all([
+    fetch('/validate-coupon', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({code:code, tier:'standard'})}).then(function(r){return r.json();}),
+    fetch('/validate-coupon', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({code:code, tier:'pro'})}).then(function(r){return r.json();})
+  ]).then(function(results) {
+    var std = results[0], pro = results[1];
+    if (std.valid) {
       activeCoupon = code;
       msg.style.color = '#4ecb71';
-      msg.textContent = d.message;
-      updatePrices(d);
+      msg.textContent = std.message;
+      updatePrices(std.discounted, pro.discounted);
     } else {
       activeCoupon = null;
       msg.style.color = '#e55';
-      msg.textContent = d.message || 'Invalid coupon.';
+      msg.textContent = std.message || 'Invalid coupon.';
     }
   });
 }
 
-function updatePrices(discount) {
+function updatePrices(stdNew, proNew) {
   var stdOrig = PRICES.standard;
   var proOrig = PRICES.pro;
-  var stdNew = discount ? discount.discounted : stdOrig;
-  var proNew = discount ? Math.max(0, (proOrig * (1 - (stdOrig - stdNew)/stdOrig))).toFixed(2) : proOrig;
 
   function setPriceEl(id_whole, id_cents, val) {
     var parts = parseFloat(val).toFixed(2).split('.');
@@ -543,10 +543,8 @@ function updatePrices(discount) {
   }
   setPriceEl('price-standard-whole', 'price-standard-cents', stdNew);
   setPriceEl('price-pro-whole', 'price-pro-cents', proNew);
-  if (discount) {
-    document.getElementById('price-standard-note').innerHTML = '<s style="color:var(--muted)">$' + stdOrig.toFixed(2) + '</s> &nbsp; Coupon applied';
-    document.getElementById('price-pro-note').innerHTML = '<s style="color:var(--muted)">$' + proOrig.toFixed(2) + '</s> &nbsp; Coupon applied';
-  }
+  document.getElementById('price-standard-note').innerHTML = '<s style="color:var(--muted)">$' + stdOrig.toFixed(2) + '</s> &nbsp; Coupon applied';
+  document.getElementById('price-pro-note').innerHTML = '<s style="color:var(--muted)">$' + proOrig.toFixed(2) + '</s> &nbsp; Coupon applied';
 }
 
 function makeButtons(tier, containerId) {
@@ -564,7 +562,7 @@ function makeButtons(tier, containerId) {
       return fetch('/capture-order',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({orderID:data.orderID})
+        body:JSON.stringify({orderID:data.orderID, tier:tier, coupon:activeCoupon||'', referral:refCode})
       }).then(function(r){return r.json();})
         .then(function(d){
           if(d.error)throw new Error(d.error);
